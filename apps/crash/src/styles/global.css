@@ -1,0 +1,19 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--orbit-bg);
+  color: var(--orbit-text);
+  font-family: var(--orbit-font-ui);
+  overflow: hidden;
+  /* The canvas owns all gestures; stop mobile pull-to-refresh. */
+  overscroll-behavior: none;
+}

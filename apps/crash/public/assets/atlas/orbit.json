@@ -1,0 +1,275 @@
+{
+  "frames": {
+    "rocket": {
+      "frame": {
+        "x": 514,
+        "y": 1017,
+        "w": 256,
+        "h": 256
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "rocket_flame": {
+      "frame": {
+        "x": 772,
+        "y": 1017,
+        "w": 256,
+        "h": 256
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "explosion_01": {
+      "frame": {
+        "x": 1028,
+        "y": 0,
+        "w": 512,
+        "h": 512
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 512
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 512
+      }
+    },
+    "explosion_02": {
+      "frame": {
+        "x": 514,
+        "y": 0,
+        "w": 512,
+        "h": 593
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 593
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 593
+      }
+    },
+    "explosion_03": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 604
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 604
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 604
+      }
+    },
+    "particle_spark": {
+      "frame": {
+        "x": 514,
+        "y": 606,
+        "w": 346,
+        "h": 358
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 346,
+        "h": 358
+      },
+      "sourceSize": {
+        "w": 346,
+        "h": 358
+      }
+    },
+    "particle_smoke": {
+      "frame": {
+        "x": 862,
+        "y": 606,
+        "w": 351,
+        "h": 358
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 351,
+        "h": 358
+      },
+      "sourceSize": {
+        "w": 351,
+        "h": 358
+      }
+    },
+    "particle_star": {
+      "frame": {
+        "x": 1544,
+        "y": 1017,
+        "w": 171,
+        "h": 192
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 171,
+        "h": 192
+      },
+      "sourceSize": {
+        "w": 171,
+        "h": 192
+      }
+    },
+    "particle_debris": {
+      "frame": {
+        "x": 1215,
+        "y": 606,
+        "w": 315,
+        "h": 320
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 315,
+        "h": 320
+      },
+      "sourceSize": {
+        "w": 315,
+        "h": 320
+      }
+    },
+    "btn_primary": {
+      "frame": {
+        "x": 1532,
+        "y": 606,
+        "w": 512,
+        "h": 313
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 313
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 313
+      }
+    },
+    "panel_wide": {
+      "frame": {
+        "x": 1030,
+        "y": 1017,
+        "w": 512,
+        "h": 201
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 201
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 201
+      }
+    },
+    "panel_medium": {
+      "frame": {
+        "x": 0,
+        "y": 1017,
+        "w": 512,
+        "h": 262
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 262
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 262
+      }
+    },
+    "panel_small": {
+      "frame": {
+        "x": 0,
+        "y": 606,
+        "w": 512,
+        "h": 409
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 409
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 409
+      }
+    }
+  },
+  "meta": {
+    "app": "igaming-games/scripts/pack-atlas",
+    "version": "1.0",
+    "image": "orbit.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2048,
+      "h": 2048
+    },
+    "scale": "1"
+  }
+}

@@ -1,0 +1,38 @@
+.orbit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--orbit-space-2);
+  padding: var(--orbit-space-3) var(--orbit-space-4);
+  background: var(--orbit-surface);
+  border: 1px solid var(--orbit-border);
+  border-radius: var(--orbit-radius-md);
+  box-shadow: var(--orbit-shadow);
+  backdrop-filter: blur(6px);
+  color: var(--orbit-text);
+  font-family: var(--orbit-font-ui);
+}
+
+.orbit-panel--wide {
+  flex: 1 1 100%;
+}
+.orbit-panel--medium {
+  flex: 1 1 260px;
+}
+.orbit-panel--small {
+  flex: 0 1 190px;
+}
+
+.orbit-panel__title {
+  margin: 0;
+  font-size: var(--orbit-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orbit-text-muted);
+}
+
+.orbit-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--orbit-space-2);
+}

@@ -1,0 +1,5 @@
+dist
+dist-types
+node_modules
+pnpm-lock.yaml
+apps/crash/public/assets

@@ -1,0 +1,49 @@
+.orbit-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--orbit-space-1);
+  font-family: var(--orbit-font-ui);
+}
+
+.orbit-meter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--orbit-space-2);
+}
+
+.orbit-meter__label {
+  font-size: var(--orbit-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orbit-text-muted);
+}
+
+.orbit-meter__value {
+  font-family: var(--orbit-font-numeric);
+  font-size: var(--orbit-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--orbit-text);
+}
+
+.orbit-meter__track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  background: var(--orbit-meter-track);
+  border-radius: 999px;
+}
+
+.orbit-meter__fill {
+  height: 100%;
+  /* scaleX from the left edge keeps the fill on the compositor. */
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--orbit-meter-from), var(--orbit-meter-to));
+  transition: transform var(--orbit-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-meter__fill {
+    transition: none;
+  }
+}

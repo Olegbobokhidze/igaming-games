@@ -1,0 +1,50 @@
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--orbit-space-3);
+  padding: var(--orbit-space-3) var(--orbit-space-4)
+    calc(var(--orbit-space-4) + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, transparent, rgba(5, 7, 15, 0.9) 40%);
+}
+
+.hud__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--orbit-space-2);
+}
+
+.hud__stat {
+  font-family: var(--orbit-font-numeric);
+  font-size: var(--orbit-text-lg);
+  font-variant-numeric: tabular-nums;
+  /* Currency amounts must never wrap mid-figure. */
+  white-space: nowrap;
+}
+
+.hud__stat--muted {
+  font-size: var(--orbit-text-sm);
+  color: var(--orbit-text-muted);
+}
+
+.hud__actions {
+  display: flex;
+  gap: var(--orbit-space-2);
+}
+
+.hud__hint {
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-muted);
+}
+
+.hud__status {
+  font-size: var(--orbit-text-xs);
+  letter-spacing: 0.06em;
+}
+
+.hud__status--on {
+  color: var(--orbit-accent-win);
+}
+.hud__status--off {
+  color: var(--orbit-text-muted);
+}
