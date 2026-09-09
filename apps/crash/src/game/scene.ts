@@ -2,11 +2,13 @@ import { Container, Sprite, Texture, type Application } from 'pixi.js';
 import { BUNDLE, SPRITE, initAssets, loadBundle } from '@igaming/engine';
 import { multiplierToProgress } from '@igaming/core';
 import { createBackdrop } from './backdrop.js';
+import { createAmbient, createExhaust, type ExhaustOptions } from './particles.js';
 
 /**
- * Idle scene: the altitude backdrop with the rocket centred on top and its
- * exhaust flickering in place. The rocket stays put and the background moves
- * beneath it — real flight timing arrives with the FSM in stage 2.
+ * Idle scene: the altitude backdrop, the rocket holding position near the
+ * centre with a small idle sway, and its exhaust burning behind it. The
+ * rocket does not travel — the background moves beneath it, and real flight
+ * timing arrives with the FSM in stage 2.
  */
 
 export interface Scene {
@@ -76,6 +78,35 @@ const FLAME_FLICKER = {
  */
 const DEMO_CLIMB_SECONDS = 75;
 
+/** Climb progress at which ambient drift reaches full speed. */
+const AMBIENT_FULL_AT = 0.25;
+
+/**
+ * Idle sway of the rocket itself.
+ *
+ * Everything else in the frame moves — backdrop, exhaust, ambient drift —
+ * so a perfectly rigid rocket reads as a sticker pasted on top. This is not
+ * flight: it is the small hunting motion of something holding position
+ * under thrust, so the numbers are deliberately tiny and expressed as a
+ * fraction of the rocket's own on-screen size rather than in pixels, so the
+ * motion looks identical at every viewport.
+ *
+ * Each axis uses its own frequency, and none is a multiple of another. That
+ * keeps the combined path from closing into a short loop the eye can learn
+ * — the same reason the flame flicker mixes two waves.
+ */
+const ROCKET_SWAY = {
+  /** Horizontal drift, as a fraction of rocket height. */
+  swayX: 0.035,
+  swayXHz: 0.00046,
+  /** Vertical bob — smaller, since the eye is more sensitive to it. */
+  swayY: 0.022,
+  swayYHz: 0.00071,
+  /** Tilt in radians. About 1.7 degrees at the extremes. */
+  tilt: 0.03,
+  tiltHz: 0.00039,
+} as const;
+
 export async function createScene(app: Application): Promise<Scene> {
   await initAssets();
   // Backgrounds and atlas are independent bundles; load them together.
@@ -106,8 +137,49 @@ export async function createScene(app: Application): Promise<Scene> {
 
   // Flame first so the fuselage draws over the top of the exhaust.
   rocketRig.addChild(flame, rocket);
-  root.addChild(backdrop.root, rocketRig);
+
+  // Exhaust particles live in world space, not on the rig: once emitted
+  // they must drift on their own rather than being dragged by the rocket.
+  const exhaustOptions: ExhaustOptions = { nozzleX: 0, nozzleY: 0, size: 1, speed: 1 };
+  const exhaust = createExhaust(exhaustOptions);
+
+  // Ambient drift sits in front of everything, closest to the camera.
+  const ambient = createAmbient();
+
+  root.addChild(backdrop.root, exhaust.root, rocketRig, ambient.root);
   app.stage.addChild(root);
+
+  /** Rig rest position and scale, recomputed on resize. */
+  let restX = 0;
+  let restY = 0;
+  let rigScale = 1;
+  /** Clock for the idle sway, advanced by the ticker. */
+  let swayMs = 0;
+
+  /**
+   * Offset the rig from its rest position and keep the particle emitter
+   * pinned to the nozzle.
+   *
+   * The emitter has to be updated here rather than in `layout`, because the
+   * nozzle now moves every frame: leaving it at the rest position would let
+   * the rocket drift away from its own exhaust.
+   */
+  const applySway = (): void => {
+    const height = rocket.texture.width * rigScale;
+
+    const offsetX = Math.sin(swayMs * ROCKET_SWAY.swayXHz) * ROCKET_SWAY.swayX * height;
+    const offsetY = Math.sin(swayMs * ROCKET_SWAY.swayYHz) * ROCKET_SWAY.swayY * height;
+    const tilt = Math.sin(swayMs * ROCKET_SWAY.tiltHz) * ROCKET_SWAY.tilt;
+
+    rocketRig.position.set(restX + offsetX, restY + offsetY);
+    rocketRig.rotation = tilt;
+
+    // Follow the nozzle: rotate the tail offset by the same tilt so the
+    // plume leaves the engine bell rather than the rocket's old centre.
+    const tailLength = ROCKET_TAIL_OFFSET_PX * rigScale;
+    exhaustOptions.nozzleX = restX + offsetX - Math.sin(tilt) * tailLength;
+    exhaustOptions.nozzleY = restY + offsetY + Math.cos(tilt) * tailLength;
+  };
 
   const layout = (width: number, height: number): void => {
     backdrop.resize(width, height);
@@ -118,9 +190,11 @@ export async function createScene(app: Application): Promise<Scene> {
     const target = Math.min(width, height) * 0.22;
     const scale = target / Math.max(rocket.texture.width, 1);
 
-    // The rig sits at the centre; its children are placed relative to it,
-    // and scaling the rig keeps that relationship intact at any size.
-    rocketRig.position.set(width / 2, height / 2);
+    // The rig's rest position. The idle sway below offsets from here every
+    // frame, so this is stored rather than written straight to the rig.
+    restX = width / 2;
+    restY = height / 2;
+    rigScale = scale;
     rocketRig.scale.set(scale);
 
     // Local coordinates, in unscaled texture pixels. The rocket is centred
@@ -133,6 +207,16 @@ export async function createScene(app: Application): Promise<Scene> {
       ROCKET_TAIL_OFFSET_PX - FLAME_TIP_PADDING_PX * FLAME_SCALE - FLAME_OVERLAP_PX,
     );
     // flame.scale is owned by the flicker below, so it is not set here.
+
+    // `size` is the rocket's on-screen height; `speed` is tied to the
+    // viewport so the plume trails the same way at any resolution.
+    exhaustOptions.size = target;
+    exhaustOptions.speed = height * 0.55;
+    ambient.resize(width, height);
+
+    // Place the rig and its emitter once now; the ticker keeps them in
+    // step from here on.
+    applySway();
   };
 
   // While nothing drives the scene, run a one-way demo climb so the layer
@@ -169,6 +253,17 @@ export async function createScene(app: Application): Promise<Scene> {
     // Advance the backdrop's own glide toward whatever target is set. This
     // runs whether the demo or a real caller owns the target.
     backdrop.update(app.ticker.deltaMS);
+
+    // Drift the rocket before the exhaust runs, so particles emitted this
+    // frame start from the nozzle's new position.
+    swayMs += app.ticker.deltaMS;
+    applySway();
+
+    exhaust.update(app.ticker.deltaMS);
+    // Ambient drift ramps in with altitude: on the pad there is nothing to
+    // stream past, and it should not compete with the launch scenery.
+    ambient.setIntensity(Math.min(backdrop.shownProgress() / AMBIENT_FULL_AT, 1));
+    ambient.update(app.ticker.deltaMS);
   };
 
   app.ticker.add(flicker);
@@ -183,6 +278,8 @@ export async function createScene(app: Application): Promise<Scene> {
     if (destroyed) return;
     destroyed = true;
     app.ticker.remove(flicker);
+    exhaust.destroy();
+    ambient.destroy();
   };
 
   const setProgress = (progress: number): void => {

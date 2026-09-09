@@ -114,6 +114,12 @@ export interface Backdrop {
   update: (deltaMS: number) => void;
   /** Re-layout after a resize; preserves the current progress. */
   resize: (width: number, height: number) => void;
+  /**
+   * The progress actually on screen right now, after smoothing. Effects
+   * that must stay in step with the visible altitude read this rather than
+   * the requested target, which the backdrop may not have reached yet.
+   */
+  readonly shownProgress: () => number;
 }
 
 const clamp01 = (value: number): number => Math.min(Math.max(value, 0), 1);
@@ -261,5 +267,12 @@ export function createBackdrop(): Backdrop {
     apply();
   };
 
-  return { root, setProgress, snapProgress, update, resize };
+  return {
+    root,
+    setProgress,
+    snapProgress,
+    update,
+    resize,
+    shownProgress: () => shownProgress,
+  };
 }
