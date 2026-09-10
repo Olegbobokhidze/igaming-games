@@ -70,6 +70,16 @@ export interface RoundEngineOptions {
   readonly startingBalance?: number;
 }
 
+/** One player's position in the current round, for the public bet list. */
+export interface SeatView {
+  readonly playerId: string;
+  readonly stake: Minor;
+  /** Wire multiplier they cashed out at, or null while still in. */
+  readonly cashedOutAt: number | null;
+  /** What they took, once cashed out. */
+  readonly payout: Minor | null;
+}
+
 export interface RoundEngine {
   /** Register a player and return their opening balance. */
   join: (playerId: string) => Minor;
@@ -85,6 +95,16 @@ export interface RoundEngine {
   cashout: (playerId: string, now: number) => Outbound[];
   /** Drive the clock forward. Returns frames to send, possibly empty. */
   advance: (now: number) => Outbound[];
+  /**
+   * Every seat with money on the current round.
+   *
+   * This is public information at a shared table: everyone can see who is
+   * in and who has taken their money out. It carries no balances — those
+   * stay private to each player's own `settled` frame.
+   */
+  readonly seatViews: () => SeatView[];
+  /** Crash point of the round that just ended, as a wire multiplier. */
+  readonly lastCrash: () => number | null;
   /** Current round id, for logging. */
   readonly roundId: () => string;
   readonly phase: () => EnginePhase;
@@ -115,6 +135,8 @@ export function createRoundEngine(options: RoundEngineOptions = {}): RoundEngine
   let crashAt = 0;
   /** Last tick already emitted, so ticks are not duplicated. */
   let lastTickAt = 0;
+  /** Crash point of the previous round, kept for the history list. */
+  let lastCrashPoint: number | null = null;
 
   const openRound = (now: number): Outbound[] => {
     roundCounter += 1;
@@ -245,6 +267,7 @@ export function createRoundEngine(options: RoundEngineOptions = {}): RoundEngine
         if (now >= crashAt) {
           phase = 'crashed';
           const scaled = fromMultiplier(crashPoint);
+          lastCrashPoint = scaled;
           out.push({
             to: null,
             message: { type: 'crashed', roundId, multiplier: scaled },
@@ -407,6 +430,23 @@ export function createRoundEngine(options: RoundEngineOptions = {}): RoundEngine
     },
 
     advance,
+    seatViews: () => {
+      const views: SeatView[] = [];
+      for (const [playerId, seat] of seats) {
+        if (seat.stake === null) continue;
+        views.push({
+          playerId,
+          stake: seat.stake,
+          cashedOutAt: seat.cashedOutAt,
+          payout:
+            seat.cashedOutAt === null
+              ? null
+              : payoutFor(seat.stake, toMultiplier(seat.cashedOutAt)),
+        });
+      }
+      return views;
+    },
+    lastCrash: () => lastCrashPoint,
     roundId: () => roundId,
     phase: () => phase,
   };

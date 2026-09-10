@@ -2,8 +2,10 @@ import { create } from 'zustand';
 import {
   INITIAL_ROUND_STATE,
   transition,
+  type BetBoard,
   type Minor,
   type RoundEvent,
+  type RoundResult,
   type RoundState,
 } from '@igaming/core';
 import type { ConnectionStatus } from '@igaming/transport';
@@ -31,6 +33,10 @@ export interface AppState {
    * figure stays on screen through the crash.
    */
   readonly cashoutWin: { readonly payout: Minor; readonly at: number } | null;
+  /** Who is in the current round, and this round's totals. */
+  readonly board: BetBoard | null;
+  /** Finished rounds, newest first. Capped so a long session cannot grow it. */
+  readonly history: readonly RoundResult[];
 
   setStatus: (status: ConnectionStatus) => void;
   setHeartbeat: (seq: number) => void;
@@ -39,7 +45,12 @@ export interface AppState {
   setBalance: (balance: Minor) => void;
   setRejection: (reason: string | null) => void;
   setCashoutWin: (win: { payout: Minor; at: number } | null) => void;
+  setBoard: (board: BetBoard) => void;
+  addResult: (result: RoundResult) => void;
 }
+
+/** How many finished rounds the client keeps for the side panel. */
+const HISTORY_LIMIT = 60;
 
 export const useAppStore = create<AppState>((set) => ({
   status: 'idle',
@@ -48,6 +59,8 @@ export const useAppStore = create<AppState>((set) => ({
   balance: null,
   lastRejection: null,
   cashoutWin: null,
+  board: null,
+  history: [],
 
   setStatus: (status) => {
     set({ status });
@@ -76,5 +89,18 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setCashoutWin: (win) => {
     set({ cashoutWin: win });
+  },
+  setBoard: (board) => {
+    set({ board });
+  },
+  addResult: (result) => {
+    set((state) => {
+      // Guard against the same round arriving twice — the server replays
+      // history on connect, and a reconnect would otherwise duplicate it.
+      if (state.history.some((entry) => entry.roundId === result.roundId)) {
+        return state;
+      }
+      return { history: [result, ...state.history].slice(0, HISTORY_LIMIT) };
+    });
   },
 }));

@@ -1,0 +1,100 @@
+/*
+ * Recent crash points, full width above the game.
+ *
+ * Deliberately shallow: it sits between the player and the rocket, so it
+ * buys its place with one line of height and no chrome around it.
+ */
+
+.history-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 var(--orbit-space-3);
+  background: rgba(10, 14, 26, 0.9);
+  border-bottom: 1px solid var(--orbit-border);
+  /* The row scrolls sideways rather than wrapping: a second line would
+     push the canvas down every time the history filled up. */
+  overflow: hidden;
+}
+
+.history-bar--empty {
+  justify-content: center;
+}
+
+.history-bar__hint {
+  font-family: var(--orbit-font-ui);
+  font-size: var(--orbit-text-xs);
+  color: var(--orbit-text-muted);
+}
+
+.history-bar__list {
+  display: flex;
+  gap: var(--orbit-space-2);
+  margin: 0;
+  padding: var(--orbit-space-2) 0;
+  overflow-x: auto;
+  list-style: none;
+  /* Hide the scrollbar; the row is scanned, not navigated. */
+  scrollbar-width: none;
+}
+
+.history-bar__list::-webkit-scrollbar {
+  display: none;
+}
+
+.history-chip {
+  flex: 0 0 auto;
+  padding: 3px var(--orbit-space-2);
+  font-family: var(--orbit-font-numeric);
+  font-size: var(--orbit-text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  /* Newest chip slides in from the left rather than appearing abruptly. */
+  animation: history-chip-in 240ms ease-out;
+}
+
+/* Below 2x: the common, disappointing outcome. Muted so the row's
+   texture comes from the exceptions, not the baseline. */
+.history-chip--low {
+  color: var(--orbit-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--orbit-border);
+}
+
+/* 2x and above: a round most players would have taken. */
+.history-chip--high {
+  color: var(--orbit-accent-win);
+  background: rgba(53, 224, 141, 0.12);
+  border-color: rgba(53, 224, 141, 0.4);
+}
+
+/* 10x and above: rare enough to be worth remembering. */
+.history-chip--gold {
+  color: #ffd76a;
+  background: rgba(255, 180, 67, 0.16);
+  border-color: rgba(255, 180, 67, 0.55);
+  box-shadow: 0 0 10px rgba(255, 180, 67, 0.25);
+}
+
+@keyframes history-chip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-chip {
+    animation: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .history-bar {
+    /* Clear the panel toggle, which floats over this corner. */
+    padding-left: 56px;
+  }
+}

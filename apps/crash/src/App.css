@@ -1,6 +1,16 @@
 .app {
+  /* Panel beside the game, both full height. */
+  position: relative;
   display: flex;
-  flex-direction: column;
   height: 100%;
+  overflow: hidden;
   background: var(--orbit-bg);
+}
+
+.app__stage {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  /* min-width:0 lets the canvas shrink instead of forcing the panel out. */
+  min-width: 0;
 }

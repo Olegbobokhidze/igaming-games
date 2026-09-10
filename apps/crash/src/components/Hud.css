@@ -1,3 +1,20 @@
+/*
+ * Desktop split: the round takes a third, the betting controls two.
+ *
+ * Set here rather than by picking different Panel variants, because this
+ * is a ratio between these two specific panels, not a size either of them
+ * has on its own. The `flex-basis: 0` makes the grow factors govern the
+ * split outright — with an `auto` basis the panels' differing content
+ * widths would skew it away from a clean 1:2.
+ */
+.hud > .orbit-panel:first-child {
+  flex: 1 1 0;
+}
+
+.hud > .orbit-panel:nth-child(2) {
+  flex: 2 1 0;
+}
+
 .hud {
   display: flex;
   flex-wrap: wrap;
@@ -12,6 +29,43 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--orbit-space-2);
+}
+
+/*
+ * Balance, moved here from the removed Session panel.
+ *
+ * Pushed hard right with margin-left:auto so it reads as its own column
+ * rather than trailing the bet outcome.
+ */
+.hud__balance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--orbit-space-2);
+  margin-left: auto;
+  font-family: var(--orbit-font-numeric);
+  font-size: var(--orbit-text-lg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--orbit-text);
+}
+
+/* Connection state as a dot: it matters only when it is wrong, and a line
+   of text for "connected" is noise on every other frame. */
+.hud__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.hud__dot--on {
+  background: var(--orbit-accent-win);
+  box-shadow: 0 0 6px rgba(53, 224, 141, 0.7);
+}
+
+.hud__dot--off {
+  background: var(--orbit-accent-hot);
+  box-shadow: 0 0 6px rgba(255, 92, 122, 0.7);
 }
 
 .hud__stat {
@@ -34,18 +88,6 @@
 
 .hud__hint {
   font-size: var(--orbit-text-xs);
-  color: var(--orbit-text-muted);
-}
-
-.hud__status {
-  font-size: var(--orbit-text-xs);
-  letter-spacing: 0.06em;
-}
-
-.hud__status--on {
-  color: var(--orbit-accent-win);
-}
-.hud__status--off {
   color: var(--orbit-text-muted);
 }
 
@@ -150,5 +192,74 @@
 @media (prefers-reduced-motion: reduce) {
   .hud__win {
     animation: none;
+  }
+}
+
+/*
+ * Narrow screens: one panel per row, full width.
+ *
+ * The panels carry their own flex-basis (190px / 260px) so they can share
+ * a row on a desktop HUD. On a phone those bases still both fit, which
+ * left Round and Your bet cut into halves and Session orphaned on a second
+ * row. Overriding the basis here rather than changing the shared UI
+ * component keeps the desktop layout intact — the stacking is this app's
+ * layout decision, not a property of the Panel itself.
+ */
+@media (max-width: 1024px) {
+  .hud {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding-left: var(--orbit-space-3);
+    padding-right: var(--orbit-space-3);
+  }
+
+  .hud .orbit-panel {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  /* Bet and cash out stay side by side: they are the primary actions and
+     stacking them pushes the cash-out button off a short screen. */
+  .hud__actions {
+    gap: var(--orbit-space-2);
+  }
+
+  .hud__actions .orbit-button {
+    flex: 1 1 0;
+  }
+}
+
+/*
+ * Large multiplier readout.
+ *
+ * Sized to fill the widened Round panel. Tabular figures and a fixed
+ * min-height stop the row from twitching as digits change sixty times a
+ * second — the number should climb, not jitter.
+ */
+.hud__big {
+  min-height: 1.1em;
+  font-family: var(--orbit-font-numeric);
+  font-size: 40px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--orbit-text);
+  transition: color var(--orbit-transition);
+}
+
+.hud__big--flying {
+  color: var(--orbit-accent-win);
+  text-shadow: 0 0 18px rgba(53, 224, 141, 0.35);
+}
+
+.hud__big--crashed,
+.hud__big--settled {
+  color: var(--orbit-accent-hot);
+  text-shadow: 0 0 18px rgba(255, 92, 122, 0.35);
+}
+
+@media (max-width: 1024px) {
+  .hud__big {
+    font-size: 32px;
   }
 }

@@ -46,6 +46,16 @@ export function useSocket(): SocketCommands {
         });
       }
 
+      if (message.type === 'bet_board') {
+        store.setBoard(message);
+        return;
+      }
+
+      if (message.type === 'round_result') {
+        store.addResult(message);
+        return;
+      }
+
       if (message.type === 'command_rejected') {
         store.setRejection(message.reason);
         console.warn('[socket] command rejected:', message.reason);

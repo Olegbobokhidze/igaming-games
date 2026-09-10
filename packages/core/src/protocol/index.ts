@@ -142,6 +142,44 @@ export const betAcceptedSchema = z.object({
   balance: minorAmount,
 });
 
+/** One entry in the shared bet list. */
+export const betEntrySchema = z.object({
+  /** Display name. Never an account id — this list is public. */
+  name: z.string().min(1).max(32),
+  stake: minorAmount,
+  cashedOutAt: scaledMultiplier.nullable(),
+  payout: minorAmount.nullable(),
+});
+
+/**
+ * Who is playing the current round, and the session totals above the list.
+ *
+ * Broadcast rather than per-player: everyone at the table sees the same
+ * board. It deliberately carries no balances — those are private and
+ * travel only in each player's own `settled` frame.
+ */
+export const betBoardSchema = z.object({
+  type: z.literal('bet_board'),
+  roundId,
+  entries: z.array(betEntrySchema).max(200),
+  /** Total staked across every player this round. */
+  totalStake: minorAmount,
+  /** Total already paid out to players who cashed out. */
+  totalPayout: minorAmount,
+});
+
+/** A finished round, for the history list. */
+export const roundResultSchema = z.object({
+  type: z.literal('round_result'),
+  roundId,
+  multiplier: scaledMultiplier,
+  entries: z.array(betEntrySchema).max(200),
+  totalStake: minorAmount,
+  totalPayout: minorAmount,
+  /** Server time the round crashed, for relative timestamps. */
+  endedAt: timestamp,
+});
+
 /**
  * A command was refused. `reason` is a stable machine-readable code; any
  * player-facing wording is the client's business, not the server's.
@@ -176,6 +214,8 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   cashedOutSchema,
   betAcceptedSchema,
   commandRejectedSchema,
+  betBoardSchema,
+  roundResultSchema,
 ]);
 
 export type Heartbeat = z.infer<typeof heartbeatSchema>;
@@ -188,6 +228,9 @@ export type Settled = z.infer<typeof settledSchema>;
 export type CashedOut = z.infer<typeof cashedOutSchema>;
 export type BetAccepted = z.infer<typeof betAcceptedSchema>;
 export type CommandRejected = z.infer<typeof commandRejectedSchema>;
+export type BetEntry = z.infer<typeof betEntrySchema>;
+export type BetBoard = z.infer<typeof betBoardSchema>;
+export type RoundResult = z.infer<typeof roundResultSchema>;
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
 
 // ---------------------------------------------------------------------------

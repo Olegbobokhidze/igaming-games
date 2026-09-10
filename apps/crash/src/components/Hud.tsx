@@ -41,12 +41,15 @@ function MultiplierDisplay() {
 
   return (
     <>
+      {/* The multiplier gets its own large readout now that the widened
+          panel has the room. It is the number the whole game turns on, and
+          reading it off the meter's small label meant looking twice. */}
+      <div className={`hud__big hud__big--${phase}`}>{label}</div>
       <Meter
         label="Multiplier"
         value={multiplierToProgress(multiplier)}
         min={0}
         max={1}
-        displayValue={label}
       />
       <span className={`hud__phase hud__phase--${phase}`}>{phaseText(phase)}</span>
     </>
@@ -110,7 +113,7 @@ export function Hud({
 
   return (
     <div className="hud">
-      <Panel title="Round" variant="small">
+      <Panel title="Round" variant="medium">
         <MultiplierDisplay />
       </Panel>
 
@@ -118,6 +121,17 @@ export function Hud({
         <div className="hud__row">
           <span className="hud__stat">{betText}</span>
           <span className="hud__stat hud__stat--muted">{outcome}</span>
+          {/* Balance keeps its own slot on the right: it is the number a
+              player checks between rounds, and losing it with the Session
+              panel would leave it nowhere on screen. */}
+          <span className="hud__balance">
+            {balance === null ? '—' : formatMinor(balance)}
+            <span
+              className={`hud__dot hud__dot--${connected ? 'on' : 'off'}`}
+              title={connected ? 'Connected' : 'Offline'}
+              aria-label={connected ? 'Connected' : 'Offline'}
+            />
+          </span>
         </div>
 
         <div className="hud__stakes">
@@ -184,17 +198,6 @@ export function Hud({
         {rejection !== null && (
           <span className="hud__error">{REJECTION_TEXT[rejection] ?? rejection}</span>
         )}
-      </Panel>
-
-      <Panel title="Session" variant="small">
-        <div className="hud__row">
-          <span className="hud__stat">
-            {balance === null ? '—' : formatMinor(balance)}
-          </span>
-        </div>
-        <span className={`hud__status hud__status--${connected ? 'on' : 'off'}`}>
-          {connected ? 'socket connected' : 'socket offline'}
-        </span>
       </Panel>
     </div>
   );
