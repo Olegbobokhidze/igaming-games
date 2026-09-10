@@ -129,3 +129,42 @@ describe('toRoundEvent', () => {
     expect(state.lastPayout).toBe(0);
   });
 });
+
+describe('cashed_out frame', () => {
+  it('becomes a CASHED_OUT event with a float multiplier', () => {
+    const event = toRoundEvent(
+      { type: 'cashed_out', roundId: 'r1', multiplier: 275, payout: 2750 },
+      inRound,
+    );
+    expect(event).toEqual({ type: 'CASHED_OUT', multiplier: 2.75 });
+  });
+
+  it('is dropped for a stale round', () => {
+    expect(
+      toRoundEvent(
+        { type: 'cashed_out', roundId: 'r0', multiplier: 200, payout: 2000 },
+        inRound,
+      ),
+    ).toBeNull();
+  });
+
+  it('marks the bet cashed out through to settlement', () => {
+    // The player must see they are out before the round ends, and that
+    // status has to survive the crash that follows.
+    const frames: ServerMessage[] = [
+      { type: 'round_opened', roundId: 'rc', betsCloseAt: 5_000 },
+      { type: 'bet_accepted', roundId: 'rc', stake: 1000, balance: 9000 },
+      { type: 'bets_closed', roundId: 'rc' },
+      { type: 'launched', roundId: 'rc', startedAt: 0 },
+      { type: 'cashed_out', roundId: 'rc', multiplier: 200, payout: 2000 },
+      { type: 'crashed', roundId: 'rc', multiplier: 500 },
+    ];
+    let state = INITIAL_ROUND_STATE;
+    for (const frame of frames) {
+      const event = toRoundEvent(frame, state);
+      if (event !== null) state = transition(state, event);
+    }
+    expect(state.bet).toEqual({ kind: 'cashed_out', stake: 1000, at: 2 });
+    expect(state.phase).toBe('crashed');
+  });
+});

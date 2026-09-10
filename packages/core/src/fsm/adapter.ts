@@ -65,6 +65,10 @@ export function toRoundEvent(
           message.cashedOutAt === null ? null : toMultiplier(message.cashedOutAt),
       };
 
+    case 'cashed_out':
+      if (!isCurrentRound(message.roundId, state)) return null;
+      return { type: 'CASHED_OUT', multiplier: toMultiplier(message.multiplier) };
+
     case 'bet_accepted':
       if (!isCurrentRound(message.roundId, state)) return null;
       return { type: 'BET_ACCEPTED', stake: asMinor(message.stake) };

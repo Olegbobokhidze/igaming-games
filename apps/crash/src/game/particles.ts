@@ -33,8 +33,21 @@ interface Particle {
 
 export interface ParticleSystem {
   readonly root: Container;
-  /** Advance the simulation. `deltaMS` comes from the ticker. */
+  /**
+   * Advance the simulation. `deltaMS` comes from the ticker.
+   *
+   * This must keep being called even when emission is switched off, or
+   * particles already in flight freeze in place instead of finishing.
+   */
   update: (deltaMS: number) => void;
+  /**
+   * Start or stop spawning new particles. Existing ones are untouched and
+   * live out their remaining lifetime, which is what makes an engine
+   * cutting out read as dying rather than being switched off.
+   */
+  setEmitting: (emitting: boolean) => void;
+  /** Immediately clear every live particle, with no fade. */
+  clear: () => void;
   /** Called on resize so emitters know the viewport. */
   resize: (width: number, height: number) => void;
   /** Return every live particle and release pooled sprites. */
@@ -149,6 +162,7 @@ export function createExhaust(options: ExhaustOptions): ParticleSystem {
   const smoke: Particle[] = [];
   let sparkDebt = 0;
   let smokeDebt = 0;
+  let emitting = true;
 
   const spawnSpark = (): void => {
     const sprite = sparkPool.acquire();
@@ -219,31 +233,51 @@ export function createExhaust(options: ExhaustOptions): ParticleSystem {
     // spawn thousands of particles in a single frame.
     const deltaSeconds = Math.min(deltaMS, 100) / 1000;
 
-    sparkDebt += SPARK_RATE * deltaSeconds;
-    while (sparkDebt >= 1) {
-      spawnSpark();
-      sparkDebt -= 1;
-    }
-    smokeDebt += SMOKE_RATE * deltaSeconds;
-    while (smokeDebt >= 1) {
-      spawnSmoke();
-      smokeDebt -= 1;
+    if (emitting) {
+      sparkDebt += SPARK_RATE * deltaSeconds;
+      while (sparkDebt >= 1) {
+        spawnSpark();
+        sparkDebt -= 1;
+      }
+      smokeDebt += SMOKE_RATE * deltaSeconds;
+      while (smokeDebt >= 1) {
+        spawnSmoke();
+        smokeDebt -= 1;
+      }
+    } else {
+      // Drop any fractional debt so restarting does not spawn a burst of
+      // particles that the engine "owed" while it was off.
+      sparkDebt = 0;
+      smokeDebt = 0;
     }
 
     advance(sparks, sparkPool, deltaSeconds, 0.6);
     advance(smoke, smokePool, deltaSeconds, 2.2);
   };
 
-  const destroy = (): void => {
+  const clear = (): void => {
     for (const particle of sparks) sparkPool.release(particle.sprite);
     for (const particle of smoke) smokePool.release(particle.sprite);
     sparks.length = 0;
     smoke.length = 0;
+  };
+
+  const destroy = (): void => {
+    clear();
     sparkPool.clear();
     smokePool.clear();
   };
 
-  return { root, update, resize: () => undefined, destroy };
+  return {
+    root,
+    update,
+    setEmitting: (value) => {
+      emitting = value;
+    },
+    clear,
+    resize: () => undefined,
+    destroy,
+  };
 }
 
 // --------------------------------------------------------------------------
@@ -371,14 +405,30 @@ export function createAmbient(): AmbientSystem {
     intensity = Math.min(Math.max(value, 0), 1);
   };
 
-  const destroy = (): void => {
+  const clear = (): void => {
     for (const particle of stars) starPool.release(particle.sprite);
     for (const particle of debris) debrisPool.release(particle.sprite);
     stars.length = 0;
     debris.length = 0;
+  };
+
+  const destroy = (): void => {
+    clear();
     starPool.clear();
     debrisPool.clear();
   };
 
-  return { root, update, resize, destroy, setIntensity };
+  return {
+    root,
+    update,
+    // Ambient drift has no discrete emitter: its density follows
+    // `setIntensity`, so switching emission off just parks it.
+    setEmitting: (value) => {
+      if (!value) intensity = 0;
+    },
+    clear,
+    resize,
+    destroy,
+    setIntensity,
+  };
 }

@@ -13,15 +13,29 @@
 import { fromMultiplier, MULTIPLIER_SCALE } from '../protocol/index.js';
 
 /**
- * Growth rate per second.
+ * Seconds the multiplier takes to double.
  *
- * The curve is exponential, not linear: at 1.07 the multiplier doubles
- * roughly every 10 seconds, so each doubling takes the same wall-clock time
- * whether it is 1x to 2x or 8x to 16x. A linear curve would make early
- * multipliers crawl and late ones sprint, which reads as the game speeding
- * up rather than the stake growing.
+ * This is the number that sets the pace of the game, so it is expressed in
+ * the units a designer actually reasons about rather than as a raw growth
+ * constant.
+ *
+ * Five seconds is chosen from the crash distribution: about half of all
+ * rounds end below 2x, so the median round lasts roughly this long. Slower
+ * and the common round is a player watching a near-static number; faster
+ * and there is no time to decide whether to cash out. A 10x round runs
+ * about 17 seconds, which is long enough to feel like an event.
  */
-export const GROWTH_PER_SECOND = 1.07;
+export const SECONDS_PER_DOUBLING = 5;
+
+/**
+ * Growth rate per second, derived from the doubling time.
+ *
+ * The curve is exponential, not linear, so every doubling costs the same
+ * wall-clock time whether it is 1x to 2x or 8x to 16x. A linear curve makes
+ * early multipliers crawl and late ones sprint, which reads as the game
+ * speeding up rather than the stake growing.
+ */
+export const GROWTH_PER_SECOND = 2 ** (1 / SECONDS_PER_DOUBLING);
 
 /**
  * Multiplier at a given elapsed time, as a float.

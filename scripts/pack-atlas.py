@@ -24,9 +24,54 @@ FRAMES = [
 PAD = 2
 MAX_W = 2048
 
+def key_out_flat_background(im):
+    """Turn an explosion frame's flat backdrop into real transparency.
+
+    The explosion PNGs are not cleanly cut out: behind the fire sits a flat
+    rgb(21,21,21) at alpha ~94, covering the entire frame. Drawn additively
+    that grey adds roughly 8/255 of light across a large square, which the
+    eye reads as a lit box floating behind the fireball.
+
+    Cropping alone cannot fix it — the backdrop extends behind the fire, not
+    just around it. Instead each pixel's alpha is rescaled by how far its
+    colour rises above the backdrop level: pixels at the backdrop become
+    fully transparent, bright fire keeps its alpha, and the soft edges of
+    the blast fall off smoothly instead of being hard-clipped.
+    """
+    px = im.load()
+    w, h = im.size
+    # Sample the corners to learn the backdrop rather than assuming 21.
+    corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
+    base = sum(sum(c[:3]) / 3 for c in corners) / len(corners)
+    # Anything within this margin of the backdrop is treated as background.
+    span = max(1.0, base * 1.6)
+
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            lum = (r + g + b) / 3
+            if lum <= base:
+                px[x, y] = (r, g, b, 0)
+                continue
+            if lum < base + span:
+                # Ramp the alpha across the transition band so the blast
+                # keeps soft edges instead of a cut-out silhouette.
+                factor = (lum - base) / span
+                px[x, y] = (r, g, b, int(a * factor))
+    return im
+
+
+def trim_transparent(im):
+    """Crop away the fully transparent margin left by the keying pass."""
+    bbox = im.getbbox()
+    return im if bbox is None else im.crop(bbox)
+
+
 imgs = []
 for name, fn in FRAMES:
     im = Image.open(os.path.join(SRC, fn)).convert("RGBA")
+    if name.startswith("explosion_"):
+        im = trim_transparent(key_out_flat_background(im))
     imgs.append((name, im))
 
 # Shelf packing, tallest first — good enough for a fixed sprite set and

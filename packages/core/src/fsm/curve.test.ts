@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MULTIPLIER_SCALE, toMultiplier } from '../protocol/index.js';
-import { multiplierAt, scaledMultiplierAt, timeToReach } from './curve.js';
+import {
+  multiplierAt,
+  scaledMultiplierAt,
+  SECONDS_PER_DOUBLING,
+  timeToReach,
+} from './curve.js';
 
 describe('multiplierAt', () => {
   it('starts at exactly 1x', () => {
@@ -19,6 +24,13 @@ describe('multiplierAt', () => {
       expect(value).toBeGreaterThan(previous);
       previous = value;
     }
+  });
+
+  it('doubles on the configured schedule', () => {
+    // Pins the pacing decision: the median round crashes near 2x, so this
+    // is roughly how long a typical round lasts.
+    expect(timeToReach(2)).toBeCloseTo(SECONDS_PER_DOUBLING * 1000, 6);
+    expect(multiplierAt(SECONDS_PER_DOUBLING * 1000)).toBeCloseTo(2, 9);
   });
 
   it('takes the same time for each doubling', () => {

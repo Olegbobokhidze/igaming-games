@@ -9,7 +9,8 @@
     "build": "tsc --build"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@igaming/core": "workspace:*"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13",

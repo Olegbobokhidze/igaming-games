@@ -117,6 +117,23 @@ export const settledSchema = z.object({
   balance: minorAmount,
 });
 
+/**
+ * The player's cashout landed, at this multiplier.
+ *
+ * Sent the moment it is priced rather than waiting for settlement at the
+ * end of the round. A player who cashes out at 2x and then watches the
+ * rocket climb to 50x needs to see immediately that they are out and what
+ * they won — telling them only once the round ends is a long, anxious
+ * silence at exactly the wrong moment.
+ */
+export const cashedOutSchema = z.object({
+  type: z.literal('cashed_out'),
+  roundId,
+  multiplier: scaledMultiplier,
+  /** What the stake paid at that multiplier. */
+  payout: minorAmount,
+});
+
 /** A bet was accepted. Echoes the stake so the client can reconcile. */
 export const betAcceptedSchema = z.object({
   type: z.literal('bet_accepted'),
@@ -156,6 +173,7 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   tickSchema,
   crashedSchema,
   settledSchema,
+  cashedOutSchema,
   betAcceptedSchema,
   commandRejectedSchema,
 ]);
@@ -167,6 +185,7 @@ export type Launched = z.infer<typeof launchedSchema>;
 export type Tick = z.infer<typeof tickSchema>;
 export type Crashed = z.infer<typeof crashedSchema>;
 export type Settled = z.infer<typeof settledSchema>;
+export type CashedOut = z.infer<typeof cashedOutSchema>;
 export type BetAccepted = z.infer<typeof betAcceptedSchema>;
 export type CommandRejected = z.infer<typeof commandRejectedSchema>;
 export type ServerMessage = z.infer<typeof serverMessageSchema>;

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { bootstrapEngine, createStatsOverlay } from '@igaming/engine';
 import { createScene } from '../game/scene.js';
+import { useAppStore } from '../state/store.js';
 import './GameCanvas.css';
 
 /**
@@ -34,6 +35,25 @@ export function GameCanvas() {
         return;
       }
 
+      // Drive the backdrop from the store directly rather than through a
+      // React prop. The multiplier changes every animation frame, and
+      // re-rendering the component tree at that rate to move a Pixi sprite
+      // would be pure overhead — the canvas is not React's to diff.
+      let lastPhase = useAppStore.getState().round.phase;
+      const unsubscribe = useAppStore.subscribe((state) => {
+        scene.setMultiplier(state.round.multiplier);
+
+        const phase = state.round.phase;
+        if (phase === lastPhase) return;
+        lastPhase = phase;
+        // The explosion is an edge, not a state: fire it once on the
+        // transition into 'crashed', and clear the wreck when the next
+        // round opens rather than when this one settles, so the debris
+        // is still on screen while the result is being read.
+        if (phase === 'crashed') scene.crash();
+        if (phase === 'betting') scene.reset();
+      });
+
       const onResize = (): void => {
         scene.layout(engine.app.renderer.width, engine.app.renderer.height);
       };
@@ -54,6 +74,7 @@ export function GameCanvas() {
       }
 
       cleanup = () => {
+        unsubscribe();
         engine.app.renderer.off('resize', onResize);
         overlay?.destroy();
         // Detach the scene's ticker callback before the app goes away.
