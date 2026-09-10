@@ -5,6 +5,12 @@
   overflow: hidden;
 }
 
+/* The Pixi host fills the stage; the overlays position against it. */
+.game-canvas__host {
+  position: absolute;
+  inset: 0;
+}
+
 .game-canvas canvas {
   display: block;
   width: 100%;

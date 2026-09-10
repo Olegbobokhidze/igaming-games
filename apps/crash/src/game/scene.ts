@@ -31,6 +31,22 @@ export interface Scene {
   /** Same, but expressed as a round multiplier (1x = pad, apex = space). */
   setMultiplier: (multiplier: number) => void;
   /**
+   * Fly the rocket in from below the viewport up to its rest position.
+   *
+   * The one moment the sprite itself travels. It is an entrance, not
+   * flight: it runs once as the round launches and ends with the rocket
+   * parked exactly where `layout` puts it, so the altitude climb that
+   * follows is the backdrop's job as before. Calling it mid-entrance is
+   * ignored; calling it after a crash does nothing until `reset`.
+   */
+  launch: () => void;
+  /**
+   * Put the rocket at its rest position immediately, with no entrance.
+   * For joining a round already in flight, where the launch has been
+   * missed and animating it now would show a takeoff that never happened.
+   */
+  arrive: () => void;
+  /**
    * Blow up the rocket where it currently sits. Called when the round
    * crashes; the scene handles the visuals, the caller owns the timing.
    */
@@ -86,6 +102,32 @@ const FLAME_FLICKER = {
 
 /** Climb progress at which ambient drift reaches full speed. */
 const AMBIENT_FULL_AT = 0.25;
+
+/**
+ * The launch entrance.
+ *
+ * The rocket starts below the bottom edge and rises to its rest position.
+ * `easeOutCubic` is the whole character of the move: it leaves the pad fast
+ * and settles softly, which reads as thrust overcoming inertia. A linear
+ * ramp reads as a lift on a rail, and an ease-in-out reads as slowing down
+ * to stop, which is wrong for something still burning.
+ *
+ * The duration is a little under the server's 1.5s launch delay, so the
+ * entrance is complete and the rocket is holding still before the first
+ * multiplier tick arrives — otherwise the climb would begin while the
+ * sprite was still moving and the two motions would fight.
+ */
+const LAUNCH = {
+  durationMs: 1_100,
+  /** How far below the rest position it starts, as a fraction of height. */
+  startBelow: 0.85,
+  /** Extra tilt at the start, easing out with the climb. Radians. */
+  tilt: 0.06,
+  /** Exhaust size and speed multiplier at full thrust, tapering to 1. */
+  thrust: 1.7,
+} as const;
+
+const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
 
 /**
  * Idle sway of the rocket itself.
@@ -162,10 +204,22 @@ export async function createScene(app: Application): Promise<Scene> {
   let restX = 0;
   let restY = 0;
   let rigScale = 1;
+  /** Viewport height, so the launch can start below the bottom edge. */
+  let viewHeight = 0;
+  /** Idle exhaust figures; the launch boost is applied on top of these. */
+  let baseExhaustSize = 1;
+  let baseExhaustSpeed = 1;
   /** Clock for the idle sway, advanced by the ticker. */
   let swayMs = 0;
   /** True between a crash and the next reset: the rocket is gone. */
   let wrecked = false;
+  /**
+   * Launch entrance progress, 0 to 1. Parked at 1 (fully arrived) so a
+   * scene that is never launched — an idle lobby, a reconnect mid-round —
+   * shows the rocket in its normal resting place rather than off-screen.
+   */
+  let launchT = 1;
+  let launching = false;
 
   /**
    * Offset the rig from its rest position and keep the particle emitter
@@ -178,9 +232,27 @@ export async function createScene(app: Application): Promise<Scene> {
   const applySway = (): void => {
     const height = rocket.texture.width * rigScale;
 
-    const offsetX = Math.sin(swayMs * ROCKET_SWAY.swayXHz) * ROCKET_SWAY.swayX * height;
-    const offsetY = Math.sin(swayMs * ROCKET_SWAY.swayYHz) * ROCKET_SWAY.swayY * height;
-    const tilt = Math.sin(swayMs * ROCKET_SWAY.tiltHz) * ROCKET_SWAY.tilt;
+    // How much of the entrance is still to run: 1 at ignition, 0 once
+    // parked. Everything launch-related scales by this, so a finished
+    // entrance contributes exactly nothing and the idle sway is untouched.
+    const rise = 1 - easeOutCubic(launchT);
+
+    let offsetX = Math.sin(swayMs * ROCKET_SWAY.swayXHz) * ROCKET_SWAY.swayX * height;
+    let offsetY = Math.sin(swayMs * ROCKET_SWAY.swayYHz) * ROCKET_SWAY.swayY * height;
+    let tilt = Math.sin(swayMs * ROCKET_SWAY.tiltHz) * ROCKET_SWAY.tilt;
+
+    if (rise > 0) {
+      // Damp the idle sway in as the rocket arrives. At full thrust it has
+      // no business hunting for position; the wobble belongs to a rocket
+      // already holding station.
+      offsetX *= launchT;
+      offsetY *= launchT;
+      tilt *= launchT;
+      // Measured from the rest position down past the bottom edge, so the
+      // rocket is genuinely off-screen at ignition at any viewport.
+      offsetY += rise * (restY + viewHeight * LAUNCH.startBelow);
+      tilt += rise * LAUNCH.tilt;
+    }
 
     // The blast shakes the whole rig, so the shockwave is felt rather than
     // just seen. It decays to zero on its own.
@@ -209,6 +281,7 @@ export async function createScene(app: Application): Promise<Scene> {
     restX = width / 2;
     restY = height / 2;
     rigScale = scale;
+    viewHeight = height;
     rocketRig.scale.set(scale);
 
     // Local coordinates, in unscaled texture pixels. The rocket is centred
@@ -223,9 +296,13 @@ export async function createScene(app: Application): Promise<Scene> {
     // flame.scale is owned by the flicker below, so it is not set here.
 
     // `size` is the rocket's on-screen height; `speed` is tied to the
-    // viewport so the plume trails the same way at any resolution.
-    exhaustOptions.size = target;
-    exhaustOptions.speed = height * 0.55;
+    // viewport so the plume trails the same way at any resolution. Kept as
+    // the baseline the launch boost multiplies, so a resize mid-entrance
+    // does not bake the boost in permanently.
+    baseExhaustSize = target;
+    baseExhaustSpeed = height * 0.55;
+    exhaustOptions.size = baseExhaustSize;
+    exhaustOptions.speed = baseExhaustSpeed;
     ambient.resize(width, height);
 
     // Place the rig and its emitter once now; the ticker keeps them in
@@ -252,6 +329,21 @@ export async function createScene(app: Application): Promise<Scene> {
 
     // Advance the backdrop's own glide toward the requested altitude.
     backdrop.update(app.ticker.deltaMS);
+
+    // Advance the entrance before the sway reads it, so the rig's position
+    // and its nozzle are computed from the same frame's progress.
+    if (launching) {
+      launchT = Math.min(launchT + app.ticker.deltaMS / LAUNCH.durationMs, 1);
+      if (launchT >= 1) launching = false;
+
+      // The engine works hardest at ignition: a bigger, faster plume for
+      // the climb, tapering to the idle burn as the rocket settles. Scaled
+      // off the same eased curve so thrust and motion agree.
+      const rise = 1 - easeOutCubic(launchT);
+      const boost = 1 + rise * (LAUNCH.thrust - 1);
+      exhaustOptions.size = baseExhaustSize * boost;
+      exhaustOptions.speed = baseExhaustSpeed * boost;
+    }
 
     // Drift the rocket before the exhaust runs, so particles emitted this
     // frame start from the nozzle's new position.
@@ -306,10 +398,51 @@ export async function createScene(app: Application): Promise<Scene> {
     exhaust.clear();
   };
 
-  const reset = (): void => {
-    wrecked = false;
+  const launch = (): void => {
+    // A crashed rocket cannot take off, and re-triggering mid-entrance
+    // would snap it back to the pad in front of the player.
+    if (wrecked || launching) return;
+    launching = true;
+    launchT = 0;
+    // Place the rig at the start of its climb before revealing it, so the
+    // first frame the player sees is already below the bottom edge rather
+    // than a flash of the rocket at its resting position.
+    applySway();
+    rocketRig.visible = true;
+    // The engine relights with the launch. Turning emission back on in
+    // `reset` would stream a plume from an invisible rocket, leaving
+    // exhaust hanging over an empty pad while the result card is up.
+    exhaust.setEmitting(true);
+  };
+
+  const arrive = (): void => {
+    launching = false;
+    launchT = 1;
     rocketRig.visible = true;
     exhaust.setEmitting(true);
+    exhaustOptions.size = baseExhaustSize;
+    exhaustOptions.speed = baseExhaustSpeed;
+    applySway();
+  };
+
+  const reset = (): void => {
+    wrecked = false;
+    // Deliberately still hidden. The result card sits over the middle of
+    // the canvas from the crash until the next launch, and a rocket back on
+    // the pad underneath it shows through from behind the card — the wreck
+    // is being read, so the replacement must not be on screen yet.
+    //
+    // `launch` is what puts it back, which is also where the entrance
+    // begins, so the rocket's return and its takeoff are the same event.
+    rocketRig.visible = false;
+    launching = false;
+    launchT = 0;
+    // The plume drifts in world space, so whatever is still hanging where
+    // the rocket used to be would otherwise be left behind mid-air.
+    exhaust.clear();
+    exhaustOptions.size = baseExhaustSize;
+    exhaustOptions.speed = baseExhaustSpeed;
+    applySway();
   };
 
   const setProgress = (progress: number): void => {
@@ -325,5 +458,15 @@ export async function createScene(app: Application): Promise<Scene> {
     setProgress(multiplierToProgress(multiplier));
   };
 
-  return { root, layout, setProgress, setMultiplier, crash, reset, destroy };
+  return {
+    root,
+    layout,
+    setProgress,
+    setMultiplier,
+    launch,
+    arrive,
+    crash,
+    reset,
+    destroy,
+  };
 }

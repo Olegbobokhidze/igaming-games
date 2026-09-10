@@ -27,29 +27,17 @@ export const SPRITE = {
 
 export type SpriteName = (typeof SPRITE)[keyof typeof SPRITE];
 
-/** Background layers, surface -> deep space. */
-export const BACKGROUND = {
-  surface: 'bg_01_surface',
-  clouds: 'bg_02_clouds',
-  stratosphere: 'bg_03_stratosphere',
-  orbit: 'bg_04_orbit',
-  deepSpace: 'bg_05_deep_space',
-} as const;
-
-export type BackgroundName = (typeof BACKGROUND)[keyof typeof BACKGROUND];
-
 /**
- * Transparent star field, tiled over the whole backdrop. It belongs to no
- * single altitude: it scrolls continuously across every layer boundary, so
- * the eye follows the stars rather than the join beneath them.
+ * Transparent star field, tiled across the whole backdrop.
+ *
+ * The only backdrop art there is. Painted altitude scenery was tried and
+ * dropped — see the note in the crash app's backdrop for why — so the
+ * climb is conveyed entirely by scrolling this texture over a flat ground
+ * colour. It tiles, so the climb never runs out and there is no join.
  */
 export const STAR_FIELD = 'orbit_stars';
 
 const backgroundAssets: UnresolvedAsset[] = [
-  ...Object.values(BACKGROUND).map((name) => ({
-    alias: name,
-    src: `/assets/backgrounds/${name}.webp`,
-  })),
   // PNG rather than webp: this one needs a real alpha channel.
   { alias: STAR_FIELD, src: '/assets/backgrounds/orbit-stars.png' },
 ];

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { bootstrapEngine, createStatsOverlay } from '@igaming/engine';
 import { createScene } from '../game/scene.js';
+import { RoundResultModal } from './RoundResultModal.js';
 import { useAppStore } from '../state/store.js';
 import './GameCanvas.css';
 
@@ -45,12 +46,21 @@ export function GameCanvas() {
 
         const phase = state.round.phase;
         if (phase === lastPhase) return;
+        const previous = lastPhase;
         lastPhase = phase;
         // The explosion is an edge, not a state: fire it once on the
         // transition into 'crashed', and clear the wreck when the next
         // round opens rather than when this one settles, so the debris
         // is still on screen while the result is being read.
         if (phase === 'crashed') scene.crash();
+        // 'launching' is the server's bets-closed-now-igniting phase, which
+        // is exactly the entrance's window: it ends when the first tick
+        // arrives and the climb takes over.
+        if (phase === 'launching') scene.launch();
+        // Joining a round already in flight skips 'launching' entirely, so
+        // the rocket would sit below the bottom edge for the whole round.
+        // Snap it into place instead of playing an entrance it has missed.
+        if (phase === 'flying' && previous !== 'launching') scene.arrive();
         if (phase === 'betting') scene.reset();
       });
 
@@ -95,5 +105,13 @@ export function GameCanvas() {
     };
   }, []);
 
-  return <div className="game-canvas" ref={hostRef} />;
+  return (
+    <div className="game-canvas">
+      {/* The Pixi host is left alone as its own node: the engine appends
+          the canvas and the dev stats overlay to it, so React must not be
+          diffing children in there. Overlays are siblings. */}
+      <div className="game-canvas__host" ref={hostRef} />
+      <RoundResultModal />
+    </div>
+  );
 }

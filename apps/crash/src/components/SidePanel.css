@@ -306,9 +306,10 @@
 
 .panel-toggle {
   position: absolute;
-  /* Below the history bar, which owns the top of the viewport. Anchoring
-     to the top edge would put the button on top of the crash points. */
-  top: calc(38px + var(--orbit-space-2));
+  /* Below the header and the history bar, which together own the top of
+     the viewport. Anchoring to the top edge would put the button on top
+     of the profile button and the crash points. */
+  top: calc(44px + 38px + var(--orbit-space-2));
   left: var(--orbit-space-2);
   z-index: 20;
   display: none;

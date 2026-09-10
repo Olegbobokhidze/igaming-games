@@ -1,0 +1,259 @@
+/*
+ * The top bar.
+ *
+ * Same shallow treatment as the history strip below it: one line of
+ * height, no shadow, so the two read as a single band of chrome rather
+ * than two stacked boxes eating into the canvas.
+ */
+
+.header {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--orbit-space-3);
+  min-height: 44px;
+  padding: 0 var(--orbit-space-3);
+  background: rgba(10, 14, 26, 0.9);
+  border-bottom: 1px solid var(--orbit-border);
+  /* Above the canvas so the dropdown is not clipped by it. */
+  z-index: 3;
+}
+
+.header__brand {
+  font-family: var(--orbit-font-ui);
+  font-size: var(--orbit-text-md);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--orbit-text-muted);
+  text-transform: uppercase;
+}
+
+.header__brand strong {
+  font-weight: 700;
+  color: var(--orbit-text);
+}
+
+.header__profile {
+  position: relative;
+}
+
+/* ---- The button ---- */
+
+.profile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--orbit-space-2);
+  padding: var(--orbit-space-1) var(--orbit-space-2);
+  background: transparent;
+  border: 1px solid var(--orbit-border);
+  border-radius: 999px;
+  color: var(--orbit-text-muted);
+  cursor: pointer;
+  transition:
+    border-color var(--orbit-transition),
+    background var(--orbit-transition);
+}
+
+.profile-button:hover,
+.profile-button--open {
+  background: rgba(126, 158, 255, 0.1);
+  border-color: var(--orbit-border-strong);
+}
+
+.profile-button:focus-visible {
+  outline: 2px solid var(--orbit-accent);
+  outline-offset: 2px;
+}
+
+.profile-button__avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-family: var(--orbit-font-ui);
+  font-size: var(--orbit-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--orbit-text);
+  background: linear-gradient(180deg, var(--orbit-accent), #2f6ae0);
+  border-radius: 50%;
+}
+
+.profile-button__caret {
+  font-size: 10px;
+  line-height: 1;
+  transition: transform var(--orbit-transition);
+}
+
+.profile-button--open .profile-button__caret {
+  transform: rotate(180deg);
+}
+
+/* The button is an avatar and a caret; screen readers get a name. */
+.profile-button__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- The dropdown ---- */
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + var(--orbit-space-2));
+  right: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: 232px;
+  background: var(--orbit-surface-raised);
+  border: 1px solid var(--orbit-border);
+  border-radius: var(--orbit-radius-md);
+  box-shadow: var(--orbit-shadow);
+  backdrop-filter: blur(8px);
+  animation: profile-menu-in 120ms ease-out;
+}
+
+.profile-menu__head {
+  display: flex;
+  align-items: center;
+  gap: var(--orbit-space-2);
+  padding: var(--orbit-space-3);
+  border-bottom: 1px solid var(--orbit-border);
+}
+
+.profile-menu__avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  font-size: var(--orbit-text-sm);
+  font-weight: 700;
+  color: var(--orbit-text);
+  background: linear-gradient(180deg, var(--orbit-accent), #2f6ae0);
+  border-radius: 50%;
+}
+
+.profile-menu__name {
+  font-size: var(--orbit-text-sm);
+  font-weight: 600;
+  color: var(--orbit-text);
+}
+
+.profile-menu__body {
+  display: flex;
+  flex-direction: column;
+  padding: var(--orbit-space-2);
+}
+
+/* ---- One setting row ---- */
+
+.profile-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--orbit-space-3);
+  padding: var(--orbit-space-2);
+  border-radius: var(--orbit-radius-sm);
+}
+
+.profile-setting:hover {
+  background: rgba(126, 158, 255, 0.07);
+}
+
+.profile-setting__label {
+  font-size: var(--orbit-text-sm);
+  color: var(--orbit-text);
+}
+
+.profile-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--orbit-space-2);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.profile-switch:focus-visible {
+  outline: 2px solid var(--orbit-accent);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.profile-switch__track {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 18px;
+  background: var(--orbit-meter-track);
+  border: 1px solid var(--orbit-border);
+  border-radius: 999px;
+  transition:
+    background var(--orbit-transition),
+    border-color var(--orbit-transition);
+}
+
+.profile-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--orbit-text-muted);
+  border-radius: 50%;
+  transition:
+    transform var(--orbit-transition),
+    background var(--orbit-transition);
+}
+
+.profile-switch--on .profile-switch__track {
+  background: rgba(53, 224, 141, 0.22);
+  border-color: rgba(53, 224, 141, 0.55);
+}
+
+.profile-switch--on .profile-switch__knob {
+  background: var(--orbit-accent-win);
+  transform: translateX(16px);
+}
+
+/* The word beside the switch: the state stays readable without relying
+   on the knob's position or on colour alone. */
+.profile-switch__text {
+  min-width: 22px;
+  font-family: var(--orbit-font-ui);
+  font-size: var(--orbit-text-xs);
+  font-weight: 600;
+  text-align: left;
+  color: var(--orbit-text-muted);
+}
+
+.profile-switch--on .profile-switch__text {
+  color: var(--orbit-accent-win);
+}
+
+@keyframes profile-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-menu {
+    animation: none;
+  }
+
+  .profile-button__caret,
+  .profile-switch__track,
+  .profile-switch__knob {
+    transition: none;
+  }
+}

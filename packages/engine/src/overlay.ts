@@ -29,11 +29,12 @@ export function createStatsOverlay(app: Application): OverlayHandle {
   element.dataset['engineOverlay'] = 'true';
   Object.assign(element.style, {
     position: 'absolute',
-    top: '8px',
-    // Right-aligned: the left corner belongs to the app's own chrome (the
-    // panel toggle on narrow screens), and a debug readout should never
-    // sit on top of a control the player needs.
-    right: '8px',
+    // Bottom-left: the top of the canvas is where the rocket climbs and
+    // where the multiplier is read, so a debug readout parked up there
+    // sits over the two things actually being watched. The bottom-left
+    // corner is empty in every phase.
+    bottom: '8px',
+    left: '8px',
     padding: '4px 8px',
     font: '11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace',
     color: '#7dffb2',

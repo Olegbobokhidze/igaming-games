@@ -1,4 +1,5 @@
 import { GameCanvas } from './components/GameCanvas.js';
+import { Header } from './components/Header.js';
 import { HistoryBar } from './components/HistoryBar.js';
 import { Hud } from './components/Hud.js';
 import { SidePanel } from './components/SidePanel.js';
@@ -20,6 +21,7 @@ export function App() {
           the panel's presence never changes the HUD's relationship to the
           game above it. */}
       <div className="app__stage">
+        <Header />
         <HistoryBar />
         <GameCanvas />
         <Hud connected={status === 'open'} commands={commands} />

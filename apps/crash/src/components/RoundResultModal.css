@@ -1,0 +1,148 @@
+/*
+ * The between-rounds card, centred over the canvas.
+ *
+ * Pointer-events off: it overlays the game area, and the player must still
+ * be able to reach anything the canvas exposes underneath while it is up.
+ * Nothing on the card is interactive, so it gives up clicks entirely.
+ */
+
+.result-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--orbit-space-1);
+  width: min(300px, calc(100% - var(--orbit-space-5) * 2));
+  padding: var(--orbit-space-4) var(--orbit-space-5);
+  background: rgba(10, 14, 26, 0.82);
+  border: 1px solid var(--orbit-border-strong);
+  border-radius: var(--orbit-radius-lg);
+  box-shadow: var(--orbit-shadow);
+  backdrop-filter: blur(10px);
+  font-family: var(--orbit-font-ui);
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: result-card-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.result-card__label {
+  font-size: var(--orbit-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--orbit-text-muted);
+}
+
+/* The crash point, the one figure the card exists to deliver. */
+.result-card__value {
+  font-family: var(--orbit-font-numeric);
+  font-size: var(--orbit-text-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--orbit-accent-hot);
+  text-shadow: 0 0 18px rgba(255, 92, 122, 0.45);
+}
+
+.result-card__outcome {
+  margin-top: var(--orbit-space-1);
+  font-size: var(--orbit-text-sm);
+  font-weight: 600;
+}
+
+.result-card__outcome--won {
+  color: var(--orbit-accent-win);
+}
+
+.result-card__outcome--lost {
+  color: var(--orbit-text);
+}
+
+.result-card__outcome--idle {
+  font-weight: 400;
+  color: var(--orbit-text-muted);
+}
+
+/* --- next-round countdown --- */
+
+.result-next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--orbit-space-2);
+  width: 100%;
+  margin-top: var(--orbit-space-3);
+  padding-top: var(--orbit-space-3);
+  border-top: 1px solid var(--orbit-border);
+}
+
+.result-next__label {
+  font-size: var(--orbit-text-xs);
+  letter-spacing: 0.04em;
+  color: var(--orbit-text-muted);
+}
+
+.result-next__label strong {
+  font-family: var(--orbit-font-numeric);
+  font-variant-numeric: tabular-nums;
+  color: var(--orbit-text);
+}
+
+.result-next__track {
+  height: 6px;
+  overflow: hidden;
+  background: var(--orbit-meter-track);
+  border-radius: 999px;
+}
+
+.result-next__fill {
+  height: 100%;
+  /* scaleX from the left keeps the bar on the compositor: it updates ten
+     times a second, and animating width would relayout on every one. */
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--orbit-accent-win), var(--orbit-accent));
+  transition: transform 100ms linear;
+}
+
+/* Waiting for the server to open the round: there is no deadline to
+   measure against yet, so the bar shows activity rather than a quantity. */
+.result-next__fill--idle {
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--orbit-accent), transparent);
+  animation: result-next-sweep 1.1s ease-in-out infinite;
+}
+
+@keyframes result-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.94);
+  }
+}
+
+@keyframes result-next-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-card {
+    animation: none;
+  }
+
+  .result-next__fill {
+    transition: none;
+  }
+
+  .result-next__fill--idle {
+    animation: none;
+    width: 100%;
+    background: var(--orbit-meter-track);
+  }
+}

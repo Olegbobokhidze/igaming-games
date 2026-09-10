@@ -91,10 +91,3 @@
     animation: none;
   }
 }
-
-@media (max-width: 1024px) {
-  .history-bar {
-    /* Clear the panel toggle, which floats over this corner. */
-    padding-left: 56px;
-  }
-}
