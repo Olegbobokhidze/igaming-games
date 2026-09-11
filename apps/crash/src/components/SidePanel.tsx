@@ -316,7 +316,7 @@ export function SidePanel() {
         {open ? '✕' : '☰'}
       </button>
 
-      <aside className={`side-panel${open ? ' side-panel--open' : ''}`}>
+      <aside className={`side-panel app-card app-card--clip${open ? ' side-panel--open' : ''}`}>
         <nav className="panel-tabs" role="tablist">
           {TABS.map((entry) => (
             <button

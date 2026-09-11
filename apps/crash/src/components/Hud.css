@@ -7,6 +7,21 @@
  * split outright — with an `auto` basis the panels' differing content
  * widths would skew it away from a clean 1:2.
  */
+/*
+ * The Panels inside the HUD are sections of one card, not cards of their
+ * own: the shell already draws a border and a radius around them, and a
+ * second set inside reads as a box in a box. Their own surface, border and
+ * shadow are dropped here rather than in the shared UI component, because
+ * this is how this app frames them, not a property of Panel itself.
+ */
+.hud .orbit-panel {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: var(--orbit-space-2) var(--orbit-space-3);
+}
+
 .hud > .orbit-panel:first-child {
   flex: 1 1 0;
 }
@@ -18,10 +33,15 @@
 .hud {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--orbit-space-3);
-  padding: var(--orbit-space-3) var(--orbit-space-4)
-    calc(var(--orbit-space-4) + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, transparent, rgba(5, 7, 15, 0.9) 40%);
+  flex: 0 0 auto;
+  gap: var(--orbit-shell-gap);
+  /* The gradient this used to carry existed to fade the controls into the
+     canvas above them. They are separate cards now, so it would only muddy
+     the card's own face.
+
+     Plain padding on all sides: the shell owns the window edge and adds
+     the safe-area inset there, so repeating it here would double it. */
+  padding: var(--orbit-shell-pad);
 }
 
 .hud__row {
@@ -116,7 +136,7 @@
   color: var(--orbit-text);
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--orbit-border);
-  border-radius: var(--orbit-radius-sm);
+  border-radius: var(--orbit-shell-radius-inner);
 }
 
 .hud__auto-input:focus-visible {
@@ -162,7 +182,7 @@
   padding: var(--orbit-space-2) var(--orbit-space-3);
   background: rgba(53, 224, 141, 0.12);
   border: 1px solid rgba(53, 224, 141, 0.45);
-  border-radius: var(--orbit-radius-sm);
+  border-radius: var(--orbit-shell-radius-inner);
   animation: hud-win-in 220ms ease-out;
 }
 
@@ -209,8 +229,6 @@
   .hud {
     flex-direction: column;
     flex-wrap: nowrap;
-    padding-left: var(--orbit-space-3);
-    padding-right: var(--orbit-space-3);
   }
 
   .hud .orbit-panel {

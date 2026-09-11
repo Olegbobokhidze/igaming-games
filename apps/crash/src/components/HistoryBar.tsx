@@ -40,14 +40,14 @@ export function HistoryBar() {
 
   if (history.length === 0) {
     return (
-      <div className="history-bar history-bar--empty">
+      <div className="history-bar app-card app-card--clip history-bar--empty">
         <span className="history-bar__hint">Waiting for the first result…</span>
       </div>
     );
   }
 
   return (
-    <div className="history-bar" role="log" aria-label="Recent crash points">
+    <div className="history-bar app-card app-card--clip" role="log" aria-label="Recent crash points">
       <ul className="history-bar__list">
         {history.slice(0, VISIBLE).map((round) => {
           const value = toMultiplier(round.multiplier);

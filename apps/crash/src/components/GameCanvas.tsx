@@ -23,7 +23,14 @@ export function GameCanvas() {
     let cleanup: (() => void) | null = null;
 
     void (async () => {
-      const engine = await bootstrapEngine({ container: host });
+      // Clear to the shell's card surface, not the engine's page-dark
+      // default: the canvas is one card among several, and the default
+      // showed as a darker rectangle for the frame before the backdrop's
+      // ground rect painted over it.
+      const engine = await bootstrapEngine({
+        container: host,
+        backgroundColor: 0x0b0f1c,
+      });
       if (disposed) {
         engine.destroy();
         return;
@@ -106,7 +113,7 @@ export function GameCanvas() {
   }, []);
 
   return (
-    <div className="game-canvas">
+    <div className="game-canvas app-card app-card--clip">
       {/* The Pixi host is left alone as its own node: the engine appends
           the canvas and the dev stats overlay to it, so React must not be
           diffing children in there. Overlays are siblings. */}

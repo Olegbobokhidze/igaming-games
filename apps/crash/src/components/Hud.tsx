@@ -112,7 +112,7 @@ export function Hud({
   })();
 
   return (
-    <div className="hud">
+    <div className="hud app-card app-card--clip">
       <Panel title="Round" variant="medium">
         <MultiplierDisplay />
       </Panel>

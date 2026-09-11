@@ -1,16 +1,82 @@
+/*
+ * App shell.
+ *
+ * The page is a set of cards — top bar, side panel, game, betting controls
+ * — floating on a common background with the same radius, the same gap and
+ * the same inner padding. Previously these were full-bleed panes separated
+ * by 1px borders; the borders are gone, and the background showing through
+ * the gaps is what separates them now.
+ *
+ * Every measurement comes from the --orbit-shell-* tokens rather than being
+ * written here, so the set cannot drift out of step one component at a time.
+ */
+
 .app {
-  /* Panel beside the game, both full height. */
   position: relative;
   display: flex;
+  flex-direction: column;
+  gap: var(--orbit-shell-gap);
   height: 100%;
+  /* The gap the cards keep from each other, they also keep from the window.
+     Using padding rather than a margin on each card means the background is
+     continuous behind the whole set. */
+  padding: var(--orbit-shell-gap);
   overflow: hidden;
   background: var(--orbit-bg);
+}
+
+.app__body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--orbit-shell-gap);
+  /* min-height:0 lets the columns scroll internally instead of growing the
+     page — the lists inside the panel are what scroll, not the shell. */
+  min-height: 0;
 }
 
 .app__stage {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  gap: var(--orbit-shell-gap);
   /* min-width:0 lets the canvas shrink instead of forcing the panel out. */
   min-width: 0;
+}
+
+/*
+ * The shared card face.
+ *
+ * Applied by every region rather than being repeated in each stylesheet, so
+ * "all four match" is enforced by there being one rule, not by four rules
+ * agreeing. Components add their own layout on top; none of them set their
+ * own radius, background or border.
+ */
+.app-card {
+  background: var(--orbit-shell-surface);
+  border-radius: var(--orbit-shell-radius);
+}
+
+/*
+ * Clip children to the card's corners.
+ *
+ * Opt-in rather than the default, because clipping and overflowing are both
+ * legitimate: the canvas and the scrolling lists must be cut to the radius,
+ * while the header has a dropdown that has to escape the card entirely.
+ * Making it a modifier means a card that overflows says so, instead of
+ * fighting a blanket rule and depending on which stylesheet loaded last.
+ */
+.app-card--clip {
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .app {
+    /* Keep the gutter on a phone. Dropping it to reclaim width cut the
+       cards' corners off against the screen edges, which is worse than
+       the few pixels it bought — the rounding is the point. */
+    padding: var(--orbit-shell-gap);
+    /* Below the notch and above the home indicator. */
+    padding-top: calc(var(--orbit-shell-gap) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--orbit-shell-gap) + env(safe-area-inset-bottom, 0px));
+  }
 }

@@ -16,15 +16,21 @@ export function App() {
 
   return (
     <div className="app">
-      <SidePanel />
-      {/* The canvas and HUD share the remaining width as one column, so
-          the panel's presence never changes the HUD's relationship to the
-          game above it. */}
-      <div className="app__stage">
-        <Header />
-        <HistoryBar />
-        <GameCanvas />
-        <Hud connected={status === 'open'} commands={commands} />
+      {/* The header spans the full width above both columns: it belongs to
+          the page, not to the game, and boxing it inside the stage column
+          left it stopping short of the panel for no reason. */}
+      <Header />
+
+      <div className="app__body">
+        <SidePanel />
+        {/* The canvas and HUD share the remaining width as one column, so
+            the panel's presence never changes the HUD's relationship to the
+            game above it. */}
+        <div className="app__stage">
+          <HistoryBar />
+          <GameCanvas />
+          <Hud connected={status === 'open'} commands={commands} />
+        </div>
       </div>
     </div>
   );

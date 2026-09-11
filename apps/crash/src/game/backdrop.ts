@@ -24,8 +24,15 @@ import { STAR_FIELD } from '@igaming/engine';
  * ground colour with the stars brightening as altitude rises.
  */
 
-/** Backdrop ground colour, matching the page's --orbit-bg token. */
-const GROUND_COLOR = 0x05070f;
+/**
+ * Backdrop ground colour, matching the --orbit-shell-surface token.
+ *
+ * The game sits in a card alongside the panel and the controls, so it takes
+ * the same face they do. Painting the page's --orbit-bg here instead made
+ * the card invisible: it matched the background showing through the gaps,
+ * so the game read as a hole in the layout rather than a panel in it.
+ */
+const GROUND_COLOR = 0x0b0f1c;
 
 /**
  * How quickly the shown progress chases the requested value, per frame at

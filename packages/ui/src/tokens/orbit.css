@@ -40,6 +40,28 @@
   --orbit-radius-md: 10px;
   --orbit-radius-lg: 16px;
 
+  /*
+   * App shell.
+   *
+   * The regions of the page — top bar, side panel, game, betting controls —
+   * are cards floating on the page background rather than panes divided by
+   * borders. These three values are what make them read as one set: every
+   * card takes the same radius, the same inner padding, and the same gap
+   * from its neighbours and from the window edge. Change them here, not per
+   * component, or the set stops matching.
+   */
+  --orbit-shell-radius: 20px;
+  /*
+   * Radius for boxes nested inside a card — stat tiles, the win banner,
+   * inputs. Smaller than the card's own, because a child sharing its
+   * parent's radius reads as a second card rather than a section of one.
+   */
+  --orbit-shell-radius-inner: 12px;
+  --orbit-shell-gap: 6px;
+  --orbit-shell-pad: 12px;
+  /* Card face. Opaque: these sit on the page ground, not over artwork. */
+  --orbit-shell-surface: #0b0f1c;
+
   /* Typography */
   --orbit-font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --orbit-font-numeric: ui-monospace, 'SF Mono', Menlo, monospace;

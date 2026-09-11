@@ -96,7 +96,7 @@ export function Header() {
     .toUpperCase();
 
   return (
-    <header className="header">
+    <header className="header app-card">
       <span className="header__brand">
         Orbit<strong>Crash</strong>
       </span>

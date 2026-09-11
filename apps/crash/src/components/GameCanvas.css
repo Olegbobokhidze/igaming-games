@@ -2,7 +2,6 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
 }
 
 /* The Pixi host fills the stage; the overlays position against it. */

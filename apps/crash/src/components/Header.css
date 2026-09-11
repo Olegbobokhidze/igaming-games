@@ -1,9 +1,8 @@
 /*
  * The top bar.
  *
- * Same shallow treatment as the history strip below it: one line of
- * height, no shadow, so the two read as a single band of chrome rather
- * than two stacked boxes eating into the canvas.
+ * One of the shell cards: its face, radius and clipping come from
+ * .app-card, so only its own layout lives here.
  */
 
 .header {
@@ -13,11 +12,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--orbit-space-3);
-  min-height: 44px;
-  padding: 0 var(--orbit-space-3);
-  background: rgba(10, 14, 26, 0.9);
-  border-bottom: 1px solid var(--orbit-border);
-  /* Above the canvas so the dropdown is not clipped by it. */
+  min-height: 48px;
+  padding: 0 var(--orbit-shell-pad);
+  /* Above the cards below it, so the dropdown draws over them rather than
+     behind. The card deliberately does not take .app-card--clip: the menu
+     hangs past its bottom edge. */
   z-index: 3;
 }
 

@@ -9,13 +9,8 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  min-height: 38px;
-  padding: 0 var(--orbit-space-3);
-  background: rgba(10, 14, 26, 0.9);
-  border-bottom: 1px solid var(--orbit-border);
-  /* The row scrolls sideways rather than wrapping: a second line would
-     push the canvas down every time the history filled up. */
-  overflow: hidden;
+  min-height: 40px;
+  padding: 0 var(--orbit-shell-pad);
 }
 
 .history-bar--empty {
