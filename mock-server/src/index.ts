@@ -1,98 +1,44 @@
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
-  createRoundEngine,
+  createRoundHost,
   parseClientMessage,
   toMultiplier,
-  type BetEntry,
   type Outbound,
   type ServerMessage,
 } from '@igaming/core';
-import { createBotPool } from './bots.js';
 
 /**
  * Mock game server.
  *
- * All the round logic lives in `@igaming/core`'s round engine, which is
- * clock-free and unit-tested. This file is only the parts a test cannot
- * cover: a socket, a timer and player identity.
+ * Everything about a round — timing, bets, bots, payouts, history — lives in
+ * `@igaming/core`'s round host, which is clock-free and transport-free. This
+ * file is only the parts a unit test cannot cover: a socket, a timer and
+ * player identity.
+ *
+ * The browser build runs the same host directly, with no socket at all. That
+ * is the point of the split: there is one implementation of a payout, not one
+ * per host.
  *
  * It is a mock in one important sense — the crash point comes from
- * `Math.random` and is not provably fair. A production server derives it
- * from a pre-committed server seed plus a client seed so a player can
- * verify afterwards that the house did not choose the number once it knew
- * their bet.
+ * `Math.random` and is not provably fair. A production server derives it from
+ * a pre-committed server seed plus a client seed so a player can verify
+ * afterwards that the house did not choose the number once it knew their bet.
  */
 
 const PORT = Number(process.env['MOCK_SERVER_PORT'] ?? 8080);
 
-/** How often the engine's clock is advanced. */
+/** How often the host's clock is advanced. */
 const LOOP_INTERVAL_MS = 50;
 
 /** Keepalive cadence, independent of the round loop. */
 const HEARTBEAT_INTERVAL_MS = 1000;
 
-/** How often the shared bet list is rebroadcast while a round runs. */
-const BOARD_INTERVAL_MS = 400;
-
-/** Finished rounds kept in memory for the history and leaderboard tabs. */
-const HISTORY_LIMIT = 60;
-
 const server = new WebSocketServer({ port: PORT });
-const engine = createRoundEngine();
-const bots = createBotPool(engine);
+const host = createRoundHost();
 
 /** Socket for each connected player. */
 const sockets = new Map<string, WebSocket>();
-
-/** Display name for each human player. Bots carry their own. */
-const humanNames = new Map<string, string>();
-
-/** Finished rounds, newest first. */
-const history: Extract<ServerMessage, { type: 'round_result' }>[] = [];
-
-const displayName = (playerId: string): string =>
-  bots.nameOf(playerId) ?? humanNames.get(playerId) ?? 'Player';
-
-/** Build the public bet list from the engine's seats. */
-const buildEntries = (): {
-  entries: BetEntry[];
-  totalStake: number;
-  totalPayout: number;
-} => {
-  const entries: BetEntry[] = [];
-  let totalStake = 0;
-  let totalPayout = 0;
-  for (const seat of engine.seatViews()) {
-    entries.push({
-      name: displayName(seat.playerId),
-      stake: seat.stake,
-      cashedOutAt: seat.cashedOutAt,
-      payout: seat.payout,
-    });
-    totalStake += seat.stake;
-    totalPayout += seat.payout ?? 0;
-  }
-  // Cashed-out players first, then by stake: the interesting rows are the
-  // ones that resolved, and a list that reorders every tick is unreadable.
-  entries.sort((a, b) => {
-    if ((a.payout ?? 0) !== (b.payout ?? 0)) return (b.payout ?? 0) - (a.payout ?? 0);
-    return b.stake - a.stake;
-  });
-  return { entries, totalStake, totalPayout };
-};
-
-const broadcastBoard = (): void => {
-  const { entries, totalStake, totalPayout } = buildEntries();
-  const frame: ServerMessage = {
-    type: 'bet_board',
-    roundId: engine.roundId(),
-    entries,
-    totalStake,
-    totalPayout,
-  };
-  for (const socket of sockets.values()) send(socket, frame);
-};
 
 const send = (socket: WebSocket, message: ServerMessage): void => {
   if (socket.readyState !== WebSocket.OPEN) return;
@@ -100,11 +46,11 @@ const send = (socket: WebSocket, message: ServerMessage): void => {
 };
 
 /**
- * Deliver what the engine produced.
+ * Deliver what the host produced.
  *
  * `to === null` is a broadcast; anything else is addressed to one player.
- * The engine never touches a socket itself, which is what lets it run
- * against a fake clock in tests.
+ * The host never touches a socket itself, which is what lets it run against
+ * a fake clock in tests and in the browser.
  */
 const deliver = (frames: readonly Outbound[]): void => {
   for (const frame of frames) {
@@ -136,51 +82,12 @@ const logFrame = (message: ServerMessage): void => {
   }
 };
 
-let lastBoardAt = 0;
-
 const loop = setInterval(() => {
-  const now = Date.now();
-  const frames = engine.advance(now);
+  const frames = host.advance(Date.now());
   for (const frame of frames) {
     if (frame.to === null) logFrame(frame.message);
   }
   deliver(frames);
-
-  for (const frame of frames) {
-    if (frame.to !== null) continue;
-
-    // Bots join the round the moment it opens, through the same engine
-    // calls a human uses — nothing downstream can tell them apart.
-    if (frame.message.type === 'round_opened') {
-      bots.placeBets(now);
-      broadcastBoard();
-    }
-
-    // The crash is the last moment the seats still hold this round's
-    // outcome, so the history entry is captured here before they reset.
-    if (frame.message.type === 'crashed') {
-      const { entries, totalStake, totalPayout } = buildEntries();
-      const result: Extract<ServerMessage, { type: 'round_result' }> = {
-        type: 'round_result',
-        roundId: frame.message.roundId,
-        multiplier: frame.message.multiplier,
-        entries,
-        totalStake,
-        totalPayout,
-        endedAt: now,
-      };
-      history.unshift(result);
-      if (history.length > HISTORY_LIMIT) history.length = HISTORY_LIMIT;
-      for (const socket of sockets.values()) send(socket, result);
-    }
-  }
-
-  // Refresh the board on a slower cadence than the tick loop: it changes
-  // only when someone cashes out, and 20Hz of list churn helps nobody.
-  if (now - lastBoardAt >= BOARD_INTERVAL_MS && engine.phase() === 'flying') {
-    lastBoardAt = now;
-    broadcastBoard();
-  }
 }, LOOP_INTERVAL_MS);
 
 let seq = 0;
@@ -191,23 +98,15 @@ const heartbeat = setInterval(() => {
 }, HEARTBEAT_INTERVAL_MS);
 
 server.on('connection', (socket, request) => {
-  // One anonymous seat per connection. A real server would authenticate
-  // and look up an existing wallet instead.
+  // One anonymous seat per connection. A real server would authenticate and
+  // look up an existing wallet instead.
   const playerId = randomUUID();
   sockets.set(playerId, socket);
-  humanNames.set(playerId, `You`);
-  const balance = engine.join(playerId);
   console.log(
-    `[mock] player ${playerId.slice(0, 8)} joined from ${request.socket.remoteAddress ?? 'unknown'} with ${String(balance)}`,
+    `[mock] player ${playerId.slice(0, 8)} joined from ${request.socket.remoteAddress ?? 'unknown'}`,
   );
 
-  // Catch the new arrival up with the round already in progress.
-  deliver(engine.snapshotFor(playerId, Date.now()));
-
-  // Replay recent history so the side panel is populated immediately
-  // rather than filling in one round at a time.
-  for (const result of [...history].reverse()) send(socket, result);
-  broadcastBoard();
+  deliver(host.join(playerId, Date.now()));
 
   socket.on('message', (raw: Buffer) => {
     let decoded: unknown;
@@ -228,20 +127,17 @@ server.on('connection', (socket, request) => {
     const now = Date.now();
     switch (command.type) {
       case 'place_bet':
-        deliver(engine.placeBet(playerId, command.stake, command.autoCashoutAt, now));
-        broadcastBoard();
+        deliver(host.placeBet(playerId, command.stake, command.autoCashoutAt, now));
         break;
       case 'cashout':
-        deliver(engine.cashout(playerId, now));
-        broadcastBoard();
+        deliver(host.cashout(playerId, now));
         break;
     }
   });
 
   socket.on('close', () => {
     sockets.delete(playerId);
-    humanNames.delete(playerId);
-    engine.leave(playerId);
+    host.leave(playerId);
     console.log(`[mock] player ${playerId.slice(0, 8)} left`);
   });
 

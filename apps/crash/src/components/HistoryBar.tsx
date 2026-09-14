@@ -47,7 +47,11 @@ export function HistoryBar() {
   }
 
   return (
-    <div className="history-bar app-card app-card--clip" role="log" aria-label="Recent crash points">
+    <div
+      className="history-bar app-card app-card--clip"
+      role="log"
+      aria-label="Recent crash points"
+    >
       <ul className="history-bar__list">
         {history.slice(0, VISIBLE).map((round) => {
           const value = toMultiplier(round.multiplier);

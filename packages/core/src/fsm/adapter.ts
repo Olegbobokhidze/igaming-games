@@ -75,11 +75,13 @@ export function toRoundEvent(
 
     // Not part of the round lifecycle: handled by the transport and UI.
     // The board and history are shared table state, not this player's
-    // round, so they never reach the machine.
+    // round, and a balance belongs to the wallet rather than the round, so
+    // none of these reach the machine.
     case 'heartbeat':
     case 'command_rejected':
     case 'bet_board':
     case 'round_result':
+    case 'balance':
       return null;
 
     default: {

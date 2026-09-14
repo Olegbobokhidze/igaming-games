@@ -3,6 +3,7 @@ import { Header } from './components/Header.js';
 import { HistoryBar } from './components/HistoryBar.js';
 import { Hud } from './components/Hud.js';
 import { SidePanel } from './components/SidePanel.js';
+import { useGameSound } from './hooks/useGameSound.js';
 import { useMultiplierInterpolation } from './hooks/useMultiplierInterpolation.js';
 import { useSocket } from './hooks/useSocket.js';
 import { useAppStore } from './state/store.js';
@@ -12,6 +13,8 @@ export function App() {
   const commands = useSocket();
   // Smooths the multiplier between server ticks; presentation only.
   useMultiplierInterpolation();
+  // Fires effects and music off the round's transitions. Renders nothing.
+  useGameSound();
   const status = useAppStore((state) => state.status);
 
   return (

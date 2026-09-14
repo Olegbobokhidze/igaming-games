@@ -8,6 +8,7 @@ import {
   type Minor,
 } from '@igaming/core';
 import { Button, Meter, Panel } from '@igaming/ui';
+import { playClick } from '../audio/sound.js';
 import { useAppStore } from '../state/store.js';
 import type { SocketCommands } from '../hooks/useSocket.js';
 import './Hud.css';
@@ -142,6 +143,7 @@ export function Hud({
               size="sm"
               disabled={!bettable}
               onClick={() => {
+                playClick();
                 setStake(step);
               }}
             >
@@ -172,6 +174,7 @@ export function Hud({
             fullWidth
             disabled={!bettable}
             onClick={() => {
+              playClick();
               commands.placeBet(stake, autoTarget);
             }}
           >
@@ -182,7 +185,10 @@ export function Hud({
             size="lg"
             fullWidth
             disabled={!cashable}
-            onClick={commands.cashout}
+            onClick={() => {
+              playClick();
+              commands.cashout();
+            }}
           >
             Cash out
           </Button>

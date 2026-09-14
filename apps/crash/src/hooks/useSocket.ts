@@ -1,9 +1,39 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { asMinor, fromMultiplier, toMultiplier, toRoundEvent } from '@igaming/core';
-import { TransportClient } from '@igaming/transport';
+import {
+  asMinor,
+  fromMultiplier,
+  toMultiplier,
+  toRoundEvent,
+  type ClientMessage,
+} from '@igaming/core';
+import { LocalTransport, TransportClient } from '@igaming/transport';
 import { useAppStore } from '../state/store.js';
 
 const SOCKET_URL: string = import.meta.env.VITE_SOCKET_URL ?? 'ws://localhost:8080';
+
+/**
+ * Run the round in the page instead of talking to a server.
+ *
+ * On by default, and only turned off by setting VITE_SOCKET_URL, because the
+ * deployed build is static hosting with no process to hold a WebSocket open.
+ * Both transports implement the same interface and speak the same protocol
+ * frames, so nothing below this hook knows which one it has.
+ */
+const USE_LOCAL_HOST: boolean = import.meta.env.VITE_SOCKET_URL === undefined;
+
+/**
+ * What this hook needs from a transport.
+ *
+ * Structural, so both classes satisfy it without either declaring it — and
+ * narrow, so it names only what is used rather than restating either class's
+ * full surface.
+ */
+interface Transport {
+  readonly on: TransportClient['on'];
+  connect: () => void;
+  disconnect: () => void;
+  send: (message: ClientMessage) => boolean;
+}
 
 /** Commands the UI can send. Null while the socket is down. */
 export interface SocketCommands {
@@ -21,10 +51,12 @@ export interface SocketCommands {
 export function useSocket(): SocketCommands {
   // Held in a ref so the returned commands keep a stable identity across
   // renders and do not re-trigger effects in the components using them.
-  const clientRef = useRef<TransportClient | null>(null);
+  const clientRef = useRef<Transport | null>(null);
 
   useEffect(() => {
-    const client = new TransportClient({ url: SOCKET_URL });
+    const client: Transport = USE_LOCAL_HOST
+      ? new LocalTransport()
+      : new TransportClient({ url: SOCKET_URL });
     clientRef.current = client;
 
     const store = useAppStore.getState();
@@ -35,8 +67,13 @@ export function useSocket(): SocketCommands {
       // Frames that carry a balance update it directly: the server is the
       // only authority on what a player has, and the client never derives
       // it from a payout.
-      if (message.type === 'bet_accepted' || message.type === 'settled') {
+      if (
+        message.type === 'balance' ||
+        message.type === 'bet_accepted' ||
+        message.type === 'settled'
+      ) {
         store.setBalance(asMinor(message.balance));
+        if (message.type === 'balance') return;
       }
 
       if (message.type === 'cashed_out') {

@@ -37,6 +37,13 @@ export interface AppState {
   readonly board: BetBoard | null;
   /** Finished rounds, newest first. Capped so a long session cannot grow it. */
   readonly history: readonly RoundResult[];
+  /**
+   * Audio preferences, owned here rather than by the header that shows
+   * them: the sound engine reads them from a subscription, and holding
+   * them in component state would leave the two able to disagree.
+   */
+  readonly soundEnabled: boolean;
+  readonly musicEnabled: boolean;
 
   setStatus: (status: ConnectionStatus) => void;
   setHeartbeat: (seq: number) => void;
@@ -47,6 +54,8 @@ export interface AppState {
   setCashoutWin: (win: { payout: Minor; at: number } | null) => void;
   setBoard: (board: BetBoard) => void;
   addResult: (result: RoundResult) => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  setMusicEnabled: (enabled: boolean) => void;
 }
 
 /** How many finished rounds the client keeps for the side panel. */
@@ -61,6 +70,8 @@ export const useAppStore = create<AppState>((set) => ({
   cashoutWin: null,
   board: null,
   history: [],
+  soundEnabled: true,
+  musicEnabled: true,
 
   setStatus: (status) => {
     set({ status });
@@ -92,6 +103,12 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setBoard: (board) => {
     set({ board });
+  },
+  setSoundEnabled: (enabled) => {
+    set({ soundEnabled: enabled });
+  },
+  setMusicEnabled: (enabled) => {
+    set({ musicEnabled: enabled });
   },
   addResult: (result) => {
     set((state) => {

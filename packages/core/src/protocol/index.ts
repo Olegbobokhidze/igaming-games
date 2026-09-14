@@ -203,6 +203,19 @@ export const commandRejectedSchema = z.object({
  * tag instead of trying each in turn, so an unknown `type` fails fast and
  * the resulting TypeScript union narrows properly in a switch.
  */
+/**
+ * The player's balance, unprompted.
+ *
+ * Sent when a player is seated, because until then the client has no way to
+ * know what they hold: every other frame carrying a balance is the result of
+ * an action, so a player who has not yet bet would see a blank figure. The
+ * client never derives a balance, so it has to be told.
+ */
+export const balanceSchema = z.object({
+  type: z.literal('balance'),
+  balance: minorAmount,
+});
+
 export const serverMessageSchema = z.discriminatedUnion('type', [
   heartbeatSchema,
   roundOpenedSchema,
@@ -216,8 +229,10 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   commandRejectedSchema,
   betBoardSchema,
   roundResultSchema,
+  balanceSchema,
 ]);
 
+export type Balance = z.infer<typeof balanceSchema>;
 export type Heartbeat = z.infer<typeof heartbeatSchema>;
 export type RoundOpened = z.infer<typeof roundOpenedSchema>;
 export type BetsClosed = z.infer<typeof betsClosedSchema>;

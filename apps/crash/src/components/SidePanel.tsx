@@ -6,6 +6,7 @@ import {
   type BetEntry,
   type RoundResult,
 } from '@igaming/core';
+import { playClick } from '../audio/sound.js';
 import { useAppStore } from '../state/store.js';
 import './SidePanel.css';
 
@@ -271,6 +272,7 @@ function TopTab() {
             type="button"
             className={`panel-period${period === entry.id ? ' panel-period--on' : ''}`}
             onClick={() => {
+              playClick();
               setPeriod(entry.id);
             }}
           >
@@ -310,13 +312,16 @@ export function SidePanel() {
         aria-expanded={open}
         aria-label={open ? 'Close table panel' : 'Open table panel'}
         onClick={() => {
+          playClick();
           setOpen((value) => !value);
         }}
       >
         {open ? '✕' : '☰'}
       </button>
 
-      <aside className={`side-panel app-card app-card--clip${open ? ' side-panel--open' : ''}`}>
+      <aside
+        className={`side-panel app-card app-card--clip${open ? ' side-panel--open' : ''}`}
+      >
         <nav className="panel-tabs" role="tablist">
           {TABS.map((entry) => (
             <button
@@ -326,6 +331,7 @@ export function SidePanel() {
               aria-selected={tab === entry.id}
               className={`panel-tab${tab === entry.id ? ' panel-tab--on' : ''}`}
               onClick={() => {
+                playClick();
                 setTab(entry.id);
               }}
             >

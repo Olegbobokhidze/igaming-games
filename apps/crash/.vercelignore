@@ -1,0 +1,5 @@
+# Vercel builds from the repo root (see buildCommand), so the app's own
+# node_modules and previous output must not be uploaded.
+node_modules
+dist
+dist-types

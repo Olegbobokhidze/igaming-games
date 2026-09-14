@@ -13,7 +13,8 @@
  * change at all.
  */
 
-import { fromMultiplier, type RoundEngine } from '@igaming/core';
+import { fromMultiplier } from '../protocol/index.js';
+import type { RoundEngine } from './round-engine.js';
 
 /**
  * Display names. Deliberately test-looking rather than plausible real

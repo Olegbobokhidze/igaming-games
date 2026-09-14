@@ -1,34 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
+import { playClick } from '../audio/sound.js';
+import { useAppStore } from '../state/store.js';
 import './Header.css';
 
 /**
  * The top bar: the game's name, and the player behind a profile button.
  *
- * The dropdown holds the three presentation switches — sound, music and
- * animation — because they are settings a player changes once and forgets,
- * and putting them on the bar itself would compete with the rocket for
- * attention every round.
+ * The dropdown holds the presentation switches — sound and music — because
+ * they are settings a player changes once and forgets, and putting them on
+ * the bar itself would compete with the rocket for attention every round.
  *
- * The switches are chrome only at this stage: they hold their own state so
- * the control reads correctly, but nothing is wired to the audio or the
- * scene yet.
+ * The switches read and write the store rather than holding their own
+ * state, because the sound engine subscribes to the same slice. Keeping the
+ * truth in one place is what stops the control and the audio disagreeing
+ * after a remount.
  */
 
 /** Placeholder until a session tells us who is playing. */
 const PLAYER_NAME = 'Oleg Bobokhidze';
-
-interface Toggle {
-  readonly id: 'sound' | 'music' | 'animation';
-  readonly label: string;
-}
-
-const TOGGLES: readonly Toggle[] = [
-  { id: 'sound', label: 'Sound' },
-  { id: 'music', label: 'Music' },
-  { id: 'animation', label: 'Animation' },
-];
-
-type ToggleState = Record<Toggle['id'], boolean>;
 
 /** One labelled On/Off switch. */
 function SettingRow({
@@ -62,11 +51,10 @@ function SettingRow({
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [settings, setSettings] = useState<ToggleState>({
-    sound: true,
-    music: true,
-    animation: true,
-  });
+  const soundEnabled = useAppStore((state) => state.soundEnabled);
+  const musicEnabled = useAppStore((state) => state.musicEnabled);
+  const setSoundEnabled = useAppStore((state) => state.setSoundEnabled);
+  const setMusicEnabled = useAppStore((state) => state.setMusicEnabled);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // A dropdown that only closes on its own button is a trap on touch, so
@@ -108,6 +96,7 @@ export function Header() {
           aria-expanded={open}
           aria-haspopup="true"
           onClick={() => {
+            playClick();
             setOpen((value) => !value);
           }}
         >
@@ -130,19 +119,24 @@ export function Header() {
             </div>
 
             <div className="profile-menu__body">
-              {TOGGLES.map((toggle) => (
-                <SettingRow
-                  key={toggle.id}
-                  label={toggle.label}
-                  on={settings[toggle.id]}
-                  onChange={() => {
-                    setSettings((current) => ({
-                      ...current,
-                      [toggle.id]: !current[toggle.id],
-                    }));
-                  }}
-                />
-              ))}
+              <SettingRow
+                label="Sound"
+                on={soundEnabled}
+                onChange={() => {
+                  // Click first, then flip: turning sound off should still
+                  // acknowledge the press that did it.
+                  playClick();
+                  setSoundEnabled(!soundEnabled);
+                }}
+              />
+              <SettingRow
+                label="Music"
+                on={musicEnabled}
+                onChange={() => {
+                  playClick();
+                  setMusicEnabled(!musicEnabled);
+                }}
+              />
             </div>
           </div>
         )}
